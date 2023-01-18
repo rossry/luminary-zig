@@ -35,7 +35,7 @@ double usec_time_elapsed(struct timeval *from, struct timeval *to) {
     return (double)(to->tv_usec - from->tv_usec) + (double)(to->tv_sec - from->tv_sec) * MILLION;
 }
 
-int main(int argc, char *argv[]) {
+int c_main(int argc, char *argv[]) {
     int n_cores = sysconf(_SC_NPROCESSORS_ONLN);
     
     #ifdef SPECTRARY
@@ -698,7 +698,7 @@ int main(int argc, char *argv[]) {
                 case 'c'+MENU_ACTIONS: case 'C'+MENU_ACTIONS:
                     for (int x = 0; x < COLS; ++x) {
                         xy = (PETAL_ROWS+2)*COLS + x;
-                        waves_orth[xy] += 10.5 * RAINBOW_TONE_EPOCHS * COLORS;
+                        waves_orth[xy] += (int)(10.5 * RAINBOW_TONE_EPOCHS * COLORS);
                     }
                     mvprintw(DIAGNOSTIC_ROWS+1, 59, "-> Action: change color");
                     break;
@@ -710,7 +710,7 @@ int main(int argc, char *argv[]) {
                         control_directive_0[xy] = PATTERN_FULL_RAINBOW;
                         control_directive_1[xy] = PATTERN_N_TONES+2;
                         control_orth[xy] = HIBERNATION_TICKS + TRANSITION_TICKS + (in_chr == 'F' || control_orth[xy] == 0 ? 10000 : 0);
-                        waves_orth[xy] += 10.5 * RAINBOW_TONE_EPOCHS * COLORS;
+                        waves_orth[xy] += (int)(10.5 * RAINBOW_TONE_EPOCHS * COLORS);
                     }
                     if (in_chr == 'F') {
                         mvprintw(DIAGNOSTIC_ROWS+1, 59, "-> Action: centered rainbow + duration");
@@ -728,7 +728,7 @@ int main(int argc, char *argv[]) {
                     control_directive_0[xy] = PATTERN_FULL_RAINBOW;
                     control_directive_1[xy] = PATTERN_N_TONES+2;
                     control_orth[xy] = HIBERNATION_TICKS + TRANSITION_TICKS;
-                    waves_orth[xy] += 10.5 * RAINBOW_TONE_EPOCHS * COLORS;
+                    waves_orth[xy] += (int)(10.5 * RAINBOW_TONE_EPOCHS * COLORS);
                     mvprintw(DIAGNOSTIC_ROWS+1, 59, "-> Action: rainbow on petal %d", (in_chr-'1')+1);
                     break;
                 

@@ -688,7 +688,7 @@ void diffuse_turing_reagent_horiz(
     ) = 0.0;
     
     for (int x_i = -radius; x_i<=radius; ++x_i) {
-        accum_neighbors += *(
+        accum_neighbors = (long long)accum_neighbors + *(
             (&vv[((0) + (x_i-1) + ROWS*COLS) % (ROWS*COLS)].scale[0].n_activ - &vv[0].scale[0].n_activ)
             + n_neighbors
         );
@@ -736,7 +736,7 @@ void diffuse_turing_reagent_vert(
     int accum_neighbors = 0;
     
     for (int y_i = -radius; y_i<=radius; ++y_i) {
-        accum_neighbors += *(
+        accum_neighbors = (long long)accum_neighbors + *(
             (&vv[((0) + (y_i*COLS) + (-1) + ROWS*COLS) % (ROWS*COLS)].scale[0].n_activ_tmp - &vv[0].scale[0].n_activ)
             + n_neighbors
         );
