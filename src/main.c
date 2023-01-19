@@ -36,7 +36,7 @@ double usec_time_elapsed(struct timeval *from, struct timeval *to) {
     return (double)(to->tv_usec - from->tv_usec) + (double)(to->tv_sec - from->tv_sec) * MILLION;
 }
 
-int c_main(int argc, char *argv[]) {
+int c_main_deprecated(int argc, char *argv[]) {
     int spectrary_active = 0;
     char* spectrary_file = NULL;
     
