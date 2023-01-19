@@ -39,26 +39,9 @@ double usec_time_elapsed(struct timeval *from, struct timeval *to) {
 int c_run(
     int epoch_limit,
     int spectrary_active,
-    char* spectrary_file,
-    int umbrary_active,
-    char* umbrary_bmp_format_string
+    int umbrary_active
 ) {
     int n_cores = sysconf(_SC_NPROCESSORS_ONLN);
-    
-    #ifdef SPECTRARY
-        if (spectrary_active) {
-            // this should be a 3dft.dat file, as produced by snd2fftw
-            spectrary_init(spectrary_file);
-        }
-    #endif /* SPECTRARY */
-    
-    #ifdef UMBRARY
-        if (umbrary_active) {
-            // this should be a printf pattern that points to a bmp when passed an int
-            // frame 1 needs to exist, and umbrary will scan until it finds a gap
-            umbrary_init(umbrary_bmp_format_string);
-        }
-    #endif /* UMBRARY */
     
     display_init();
     
