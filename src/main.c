@@ -1,3 +1,4 @@
+#include "main.h"
 #include "constants.h"
 
 #include <unistd.h>
@@ -36,9 +37,8 @@ double usec_time_elapsed(struct timeval *from, struct timeval *to) {
 }
 
 int c_main(int argc, char *argv[]) {
-    int n_cores = sysconf(_SC_NPROCESSORS_ONLN);
-    
     int spectrary_active = 0;
+    char* spectrary_file = NULL;
     
     #ifdef SPECTRARY
         switch (argc) {
@@ -48,8 +48,7 @@ int c_main(int argc, char *argv[]) {
         case 2:
             spectrary_active = 1;
             if (spectrary_active) {
-                // this should be a 3dft.dat file, as produced by snd2fftw
-                spectrary_init(argv[1]);
+                spectrary_file = argv[1]
             }
             break;
         default:
@@ -59,6 +58,7 @@ int c_main(int argc, char *argv[]) {
     #endif /* SPECTRARY */
     
     int umbrary_active = 0;
+    char* umbrary_bmp_format_string = NULL;
         
     #ifdef UMBRARY
         switch (argc) {
@@ -70,7 +70,7 @@ int c_main(int argc, char *argv[]) {
             if (umbrary_active) {
                 // this should be a printf pattern that points to a bmp when passed an int
                 // frame 1 needs to exist, and umbrary will scan until it finds a gap
-                umbrary_init(argv[1]);
+                umbrary_bmp_format_string = argv[1];
             }
             break;
         default:
@@ -95,6 +95,39 @@ int c_main(int argc, char *argv[]) {
             }
         #endif /* UMBRARY */
     #endif /* SPECTRARY */
+    
+    return c_run(
+        epoch_limit,
+        spectrary_active,
+        spectrary_file,
+        umbrary_active,
+        umbrary_bmp_format_string
+    );
+}
+
+int c_run(
+    int epoch_limit,
+    int spectrary_active,
+    char* spectrary_file,
+    int umbrary_active,
+    char* umbrary_bmp_format_string
+) {
+    int n_cores = sysconf(_SC_NPROCESSORS_ONLN);
+    
+    #ifdef SPECTRARY
+        if (spectrary_active) {
+            // this should be a 3dft.dat file, as produced by snd2fftw
+            spectrary_init(spectrary_file);
+        }
+    #endif /* SPECTRARY */
+    
+    #ifdef UMBRARY
+        if (umbrary_active) {
+            // this should be a printf pattern that points to a bmp when passed an int
+            // frame 1 needs to exist, and umbrary will scan until it finds a gap
+            umbrary_init(umbrary_bmp_format_string);
+        }
+    #endif /* UMBRARY */
     
     display_init();
     
