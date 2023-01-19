@@ -1,5 +1,3 @@
-int c_main(int argc, char *argv[]);
-
 int c_run(
     int epoch_limit,
     int spectrary_active,
