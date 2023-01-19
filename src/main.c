@@ -38,9 +38,9 @@ double usec_time_elapsed(struct timeval *from, struct timeval *to) {
 int c_main(int argc, char *argv[]) {
     int n_cores = sysconf(_SC_NPROCESSORS_ONLN);
     
+    int spectrary_active = 0;
+    
     #ifdef SPECTRARY
-        int spectrary_active;
-        
         switch (argc) {
         case 1:
             spectrary_active = 0;
@@ -58,9 +58,9 @@ int c_main(int argc, char *argv[]) {
         }
     #endif /* SPECTRARY */
     
-    #ifdef UMBRARY
-        int umbrary_active;
+    int umbrary_active = 0;
         
+    #ifdef UMBRARY
         switch (argc) {
         case 1:
             umbrary_active = 0;
