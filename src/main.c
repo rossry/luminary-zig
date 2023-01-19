@@ -79,7 +79,7 @@ int c_main(int argc, char *argv[]) {
         }
     #endif /* UMBRARY */
     
-    int epoch_limit = -1;
+    int epoch_limit = 0;
     #ifndef SPECTRARY
         #ifndef UMBRARY
             switch (argc) {
@@ -245,7 +245,7 @@ int c_run(
     
     gettimeofday(&start, NULL);
     
-    while (epoch <= epoch_limit || epoch_limit < 0) {
+    while (epoch <= epoch_limit || epoch_limit <= 0) {
         ++epoch;
         
         // begin computing evolution
