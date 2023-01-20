@@ -78,46 +78,14 @@ int c_run(
     srand(5);
     
     for (int xy = 0; xy < ROWS * COLS; ++xy) {
-        scratch[xy] = 0;
-        
-        control_directive_0[xy] = 0;
-        control_directive_1[xy] = 0;
-        control_orth[xy] = 0;
-        control_diag[xy] = 0;
-        
         rainbow_0[xy] = RAND_COLOR;
         rainbow_0_next[xy] = RAND_COLOR;
-        impatience_0[xy] = 0;
         rainbow_1[xy] = RAND_COLOR;
         rainbow_1_next[xy] = RAND_COLOR;
-        impatience_1[xy] = 0;
-        
-        rainbow_tone[xy] = 0;
-        
-        excitement[xy] = 0.0;
-        
-        pressure_self[xy] = 0;
-        pressure_orth[xy] = 0;
-        pressure_diag[xy] = 0;
-        
-        waves_orth[xy] = 0;
-        waves_diag[xy] = 0;
         
         turing_u[xy].state = (double)rand() / (double)(RAND_MAX/2) - 1.0;
-        turing_u[xy].n_scales = 4;
-        turing_u[xy].increment[0] = 0.01*2;
-        turing_u[xy].increment[1] = 0.014*2;
-        turing_u[xy].increment[2] = 0.018*2;
-        turing_u[xy].increment[3] = 0.022*2;
-        turing_u[xy].increment[4] = 0.026*2;
         
         turing_v[xy].state = (double)rand() / (double)(RAND_MAX/2) - 1.0;
-        turing_v[xy].n_scales = 5;
-        turing_v[xy].increment[0] = 0.01*2;
-        turing_v[xy].increment[1] = 0.014*2;
-        turing_v[xy].increment[2] = 0.018*2;
-        turing_v[xy].increment[3] = 0.022*2;
-        turing_v[xy].increment[4] = 0.026*2;
     }
     
     #ifdef SACN_SERVER
