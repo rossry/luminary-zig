@@ -138,7 +138,7 @@ pub const cairo = if (OUTPUT_CAIRO) struct {
     pub const FULLSCREEN: bool = false;
     pub const VIDEO_FRAMES: bool = true;
     pub const PRINT_VERBOSE: bool = !OUTPUT_NCURSES and true;
-    pub const SNAPSHOT_EPOCH: u16 = 1323;
+    pub const SNAPSHOT_EPOCH: u16 = 1_323;
 
     pub const BLUR: bool = true;
     pub const PAINT_ALPHA: u16 = 0.1;
@@ -333,7 +333,7 @@ pub const PATTERN_N_TONES: u16 = 30;
 //pub fn PATTERN_RAND_N_TONES() u16 { PATTERN_N_TONES+2+(rand()%3); }
 pub const AGGRESSIVE_REVERSION: u16 = 100;
 
-pub const PATTERN_SACN_COLOR: u16 = 2048; // range from here to 13x here
+pub const PATTERN_SACN_COLOR: u16 = 2_048; // range from here to 13x here
 pub const PATTERN_SACN_TEXTURE: u16 = 256;
 pub const PATTERN_SACN_INTENSITY: u16 = 1;
 pub const PATTERN_SACN_INTENSE: u16 = 255;
@@ -359,5 +359,5 @@ pub const SCENE_NO_HIBERNATION: u16 = 1;
 pub const SCENE_CIRCLING_RAINBOWS: u16 = 10;
 pub const SCENE_Q2: u16 = 50;
 
-pub const MENU_ACTIONS: u16 = 1000;
-pub const MENU_SCENES: u16 = 2000;
+pub const MENU_ACTIONS: u16 = 1_000;
+pub const MENU_SCENES: u16 = 2_000;
