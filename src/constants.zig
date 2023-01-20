@@ -24,17 +24,17 @@ pub const FLOOR_ROWS: u16 = 48;
 pub const FLOOR_COLS_SHOWN: u16 = FLOOR_COLS;
 pub const FLOOR_ROWS_SHOWN: u16 = FLOOR_ROWS;
 
-pub const PETAL_COLS: u16           = if (PETALS_ACTIVE) 18 else 32; // per petal
-pub const PETAL_ROWS: u16           = if (PETALS_ACTIVE) 32 else  0;
-pub const PETAL_ROWS_CONNECTED: u16 = if (PETALS_ACTIVE)  7 else  0;
+pub const PETAL_COLS: u16 = if (PETALS_ACTIVE) 18 else 32; // per petal
+pub const PETAL_ROWS: u16 = if (PETALS_ACTIVE) 32 else 0;
+pub const PETAL_ROWS_CONNECTED: u16 = if (PETALS_ACTIVE) 7 else 0;
 pub const PETAL_ROWS_SEPARATED: u16 = (PETAL_ROWS - PETAL_ROWS_CONNECTED);
 
 pub const COLS: u16 = if (PETALS_ACTIVE) 5 * PETAL_COLS else FLOOR_COLS;
 pub const ROWS: u16 = (FLOOR_ROWS + PETAL_ROWS);
 
-pub fn PETAL_OF(xy: u16) callconv(.Inline) u16 {
+pub inline fn PETAL_OF(xy: u16) u16 {
     if (PETALS_ACTIVE) {
-        return ((xy)%COLS) / PETAL_COLS;
+        return ((xy) % COLS) / PETAL_COLS;
     } else {
         return 0;
     }
@@ -42,54 +42,52 @@ pub fn PETAL_OF(xy: u16) callconv(.Inline) u16 {
 
 pub const DIAGNOSTIC_SAMPLING_RATE: u16 = 1;
 pub const DISPLAY_PETALS_MODE: bool = PETALS_ACTIVE and true;
-pub const DISPLAY_FLOOR_ALSO: bool  = PETALS_ACTIVE and false;
+pub const DISPLAY_FLOOR_ALSO: bool = PETALS_ACTIVE and false;
 
 pub const DIAGNOSTIC_ROWS =
     if (DISPLAY_PETALS_MODE)
-        (if (DISPLAY_FLOOR_ALSO)
-            ((PETAL_ROWS + FLOOR_ROWS_SHOWN / 2) / DIAGNOSTIC_SAMPLING_RATE + 5)
-        else
-            ((PETAL_ROWS / DIAGNOSTIC_SAMPLING_RATE)*2 + 3)
-        )
+    (if (DISPLAY_FLOOR_ALSO)
+        ((PETAL_ROWS + FLOOR_ROWS_SHOWN / 2) / DIAGNOSTIC_SAMPLING_RATE + 5)
     else
-        (((FLOOR_ROWS_SHOWN-1) / DIAGNOSTIC_SAMPLING_RATE) + 1)
-;
+        ((PETAL_ROWS / DIAGNOSTIC_SAMPLING_RATE) * 2 + 3))
+else
+    (((FLOOR_ROWS_SHOWN - 1) / DIAGNOSTIC_SAMPLING_RATE) + 1);
 
 pub const DIAGNOSTIC_COLS: u16 = 72;
 
 pub const colors = struct {
     // colors (for ncurses)
-    pub const RAINBOW_00: u16 =  61;
+    pub const RAINBOW_00: u16 = 61;
     pub const RAINBOW_01: u16 = 133;
     pub const RAINBOW_02: u16 = 204;
     pub const RAINBOW_03: u16 = 203;
     pub const RAINBOW_04: u16 = 209;
     pub const RAINBOW_05: u16 = 179;
     pub const RAINBOW_06: u16 = 155;
-    pub const RAINBOW_07: u16 =  83;
-    pub const RAINBOW_08: u16 =  42;
-    pub const RAINBOW_09: u16 =  43;
-    pub const RAINBOW_10: u16 =  32;
-    pub const RAINBOW_11: u16 =  62;
-    pub const RAINBOW_40: u16 =  54;
-    pub const RAINBOW_41: u16 =  53;
-    pub const RAINBOW_42: u16 =  89;
-    pub const RAINBOW_43: u16 =  95;
-    pub const RAINBOW_44: u16 =  94;
-    pub const RAINBOW_45: u16 =  58;
-    pub const RAINBOW_46: u16 =  64;
-    pub const RAINBOW_47: u16 =  28;
-    pub const RAINBOW_48: u16 =  29;
-    pub const RAINBOW_49: u16 =  23;
-    pub const RAINBOW_50: u16 =  59;
-    pub const RAINBOW_51: u16 =  60;
-    pub const GREY_0: u16  = 242;
-    pub const GREY_1: u16  = 243;
-    pub const GREY_2: u16  = 244;
-    pub const GREY_3: u16  = 245;
-    pub const GREY_4: u16  = 246;
-    pub const GREY_5: u16  = 247;
-    pub const GREY_6: u16  = 248;
+    pub const RAINBOW_07: u16 = 83;
+    pub const RAINBOW_08: u16 = 42;
+    pub const RAINBOW_09: u16 = 43;
+    pub const RAINBOW_10: u16 = 32;
+    pub const RAINBOW_11: u16 = 62;
+    pub const RAINBOW_40: u16 = 54;
+    pub const RAINBOW_41: u16 = 53;
+    pub const RAINBOW_42: u16 = 89;
+    pub const RAINBOW_43: u16 = 95;
+    pub const RAINBOW_44: u16 = 94;
+    pub const RAINBOW_45: u16 = 58;
+    pub const RAINBOW_46: u16 = 64;
+    pub const RAINBOW_47: u16 = 28;
+    pub const RAINBOW_48: u16 = 29;
+    pub const RAINBOW_49: u16 = 23;
+    pub const RAINBOW_50: u16 = 59;
+    pub const RAINBOW_51: u16 = 60;
+    pub const GREY_0: u16 = 242;
+    pub const GREY_1: u16 = 243;
+    pub const GREY_2: u16 = 244;
+    pub const GREY_3: u16 = 245;
+    pub const GREY_4: u16 = 246;
+    pub const GREY_5: u16 = 247;
+    pub const GREY_6: u16 = 248;
     pub const GREY_40: u16 = 232;
     pub const GREY_41: u16 = 235;
     pub const GREY_42: u16 = 248;
@@ -100,27 +98,27 @@ pub const colors = struct {
 };
 
 // speeds, times, distances
-pub const BASE_HZ: u16              = 14;
-pub const WILDFIRE_SPEEDUP: u16     =  3; // wildfire effects propagate at this multiple of BASE_HZ
-pub const DISPLAY_FLUSH_EPOCHS: u16 =  1; // flush display every # epochs
+pub const BASE_HZ: u16 = 14;
+pub const WILDFIRE_SPEEDUP: u16 = 3; // wildfire effects propagate at this multiple of BASE_HZ
+pub const DISPLAY_FLUSH_EPOCHS: u16 = 1; // flush display every # epochs
 
 pub const THROTTLE_LOOP: bool = false;
-pub const THROTTLE_LOOP_N: u16    = if (THROTTLE_LOOP) 100 else undefined;
+pub const THROTTLE_LOOP_N: u16 = if (THROTTLE_LOOP) 100 else undefined;
 pub const THROTTLE_LOOP_USEC: u16 = if (THROTTLE_LOOP) 350 else undefined;
 
-pub const TRANSITION_TICKS: u16           =    400;
-pub const SECONDARY_TRANSITION_TICKS: u16 =    300;
+pub const TRANSITION_TICKS: u16 = 400;
+pub const SECONDARY_TRANSITION_TICKS: u16 = 300;
 //pub fn RAND_SECONDARY_TRANSITION() callconv(.Inline) u16 { return rand() % (ROWS * COLS) == 0; }
-pub const HIBERNATION_TICKS: u16          = 70_000; // 70000 ticks ~ 103 seconds
-pub const INITIALIZATION_EPOCHS: u16      = 1 * WILDFIRE_SPEEDUP; // run this many epochs on startup
-pub const PRESSURE_DELAY_EPOCHS: u16      =     30;
-pub const PRESSURE_RADIUS_TICKS: u16      =    150;
-pub const RAINBOW_TONE_EPOCHS: u16        =  1_200;
+pub const HIBERNATION_TICKS: u16 = 70_000; // 70000 ticks ~ 103 seconds
+pub const INITIALIZATION_EPOCHS: u16 = 1 * WILDFIRE_SPEEDUP; // run this many epochs on startup
+pub const PRESSURE_DELAY_EPOCHS: u16 = 30;
+pub const PRESSURE_RADIUS_TICKS: u16 = 150;
+pub const RAINBOW_TONE_EPOCHS: u16 = 1_200;
 
 // evolution parameters
 pub const DECAY_SQUARE: bool = false; // make decay/waves effects square rather than round
 pub const TURING_DIFFUSION_PASSES: u16 = 3;
-pub const RA2T_I: u16                  = 0.765; // 0.35
+pub const RA2T_I: u16 = 0.765; // 0.35
 
 // ncurses output
 pub const OUTPUT_NCURSES: bool = false;
@@ -128,10 +126,10 @@ pub const OUTPUT_NCURSES: bool = false;
 // gif output
 pub const OUTPUT_GIF: bool = false;
 pub const gif = if (OUTPUT_GIF) struct {
-    pub const BLUR: bool      =  true;
-    pub const BLUR_WIDTH: u16 =     4;
-    pub const ZOOM: u16       =    15;
-    pub const EPOCHS: u16     = 3_100;
+    pub const BLUR: bool = true;
+    pub const BLUR_WIDTH: u16 = 4;
+    pub const ZOOM: u16 = 15;
+    pub const EPOCHS: u16 = 3_100;
 } else undefined;
 
 // cairo output
@@ -141,40 +139,38 @@ pub const cairo = if (OUTPUT_CAIRO) struct {
     pub const VIDEO_FRAMES: bool = true;
     pub const PRINT_VERBOSE: bool = !OUTPUT_NCURSES and true;
     pub const SNAPSHOT_EPOCH: u16 = 1323;
-    
+
     pub const BLUR: bool = true;
     pub const PAINT_ALPHA: u16 = 0.1;
-    
+
     pub const CELL_LABELS: bool = false;
     pub const ZOOM: u16 = if (CELL_LABELS) 15 else 7;
-    
+
     pub const BLUR_WIDTH =
-        if (CELL_LABELS) 0 else
-        switch (ZOOM) {
-            15 => 4,
-            7 => 2,
-            5 => 1,
-            3 => 1,
-            else => 0,
-        }
-    ;
+        if (CELL_LABELS) 0 else switch (ZOOM) {
+        15 => 4,
+        7 => 2,
+        5 => 1,
+        3 => 1,
+        else => 0,
+    };
 } else undefined;
 
 // other constants (probably don't mess with these)
-pub const COLORS: u16 =       12;
+pub const COLORS: u16 = 12;
 //pub fn RAND_COLOR() callconv(.Inline) u16 { return rand() % COLORS; }
-pub const MAKE_GREY: u16 =    20;
-pub const MAKE_DARKER: u16 =  40;
-pub const EXTRA_COLOR: u16 =  80;
+pub const MAKE_GREY: u16 = 20;
+pub const MAKE_DARKER: u16 = 40;
+pub const EXTRA_COLOR: u16 = 80;
 pub const EXTRA_COLORS: u16 = 36;
-pub const BLACK: u16 =        15;
+pub const BLACK: u16 = 15;
 
 pub const DECAYABLE_INCREMENT: u16 = 17;
 
 // array is 97 elements long
-pub const WAVES_BASE_ARRAY: [97]i16 =  [97]i16{-331,-319,-307,-295,-283,-271,-260,-249,-237,-226,-215,-205,-194,-184,-173,-163,-154,-144,-135,-125,-116,-108,-99,-91,-83,-75,-68,-61,-54,-47,-41,-35,-29,-24,-18,-14,-9,-5,-1,2,4,6,6,7,8,8,9,9,9,9,9,8,8,7,6,6,4,2,-1,-5,-9,-14,-18,-24,-29,-35,-41,-47,-54,-61,-68,-75,-83,-91,-99,-108,-116,-125,-135,-144,-154,-163,-173,-184,-194,-205,-215,-226,-237,-249,-260,-271,-283,-295,-307,-319,-331};
-pub const WAVES_BASE_X_ORIG: u16 = 48 - FLOOR_COLS/2;
-pub const WAVES_INCREMENT: u16 =   DECAYABLE_INCREMENT;
+pub const WAVES_BASE_ARRAY: [97]i16 = [97]i16{ -331, -319, -307, -295, -283, -271, -260, -249, -237, -226, -215, -205, -194, -184, -173, -163, -154, -144, -135, -125, -116, -108, -99, -91, -83, -75, -68, -61, -54, -47, -41, -35, -29, -24, -18, -14, -9, -5, -1, 2, 4, 6, 6, 7, 8, 8, 9, 9, 9, 9, 9, 8, 8, 7, 6, 6, 4, 2, -1, -5, -9, -14, -18, -24, -29, -35, -41, -47, -54, -61, -68, -75, -83, -91, -99, -108, -116, -125, -135, -144, -154, -163, -173, -184, -194, -205, -215, -226, -237, -249, -260, -271, -283, -295, -307, -319, -331 };
+pub const WAVES_BASE_X_ORIG: u16 = 48 - FLOOR_COLS / 2;
+pub const WAVES_INCREMENT: u16 = DECAYABLE_INCREMENT;
 
 pub const petal_mapping = if (true) undefined else struct {
     pub const PETAL_PIXEL_PATTERN: u16 = 3;
@@ -311,61 +307,57 @@ pub const petal_mapping = if (true) undefined else struct {
 };
 
 // derived constants
-pub const USEC_PER_EPOCH: u16 =        ( 1_000_000 / BASE_HZ / WILDFIRE_SPEEDUP );
+pub const USEC_PER_EPOCH: u16 = (1_000_000 / BASE_HZ / WILDFIRE_SPEEDUP);
 // When blocking for input, aim to block until USABLE_USEC_PER_EPOCH usec have
 // passed this epoch. You'll miss, which is why this is < USEC_PER_EPOCH.
 //
-// Take up the ratio if you don't have enough "wait" time in the diagnostic, 
+// Take up the ratio if you don't have enough "wait" time in the diagnostic,
 // and can tolerate more stutter.
-pub const USABLE_USEC_PER_EPOCH: u16 = ( 0.6 * USEC_PER_EPOCH );
-pub const USABLE_MSEC_PER_EPOCH: u16 = ( USABLE_USEC_PER_EPOCH / 1_000 );
+pub const USABLE_USEC_PER_EPOCH: u16 = (0.6 * USEC_PER_EPOCH);
+pub const USABLE_MSEC_PER_EPOCH: u16 = (USABLE_USEC_PER_EPOCH / 1_000);
 
 // pattern names
-pub const PATTERN_ERR: u16 =            0;
-pub const PATTERN_BASE: u16 =           1;
-pub const PATTERN_RAINBOW_SPOTLIGHTS_ON_GREY: u16 =      2;
+pub const PATTERN_ERR: u16 = 0;
+pub const PATTERN_BASE: u16 = 1;
+pub const PATTERN_RAINBOW_SPOTLIGHTS_ON_GREY: u16 = 2;
 pub const PATTERN_RAINBOW_SPOTLIGHTS_ON_TWO_TONES: u16 = 3;
-pub const PATTERN_TWO_TONES: u16 =      4;
-pub const PATTERN_OPPOSED_TONES: u16 =  5;
-pub const PATTERN_TRIAD_TONES: u16 =    6;
-pub const PATTERN_UNUSED: u16 =         7;
-pub const PATTERN_HANABI: u16 =         8;
-pub const PATTERN_Q2: u16 =             9;
-pub const PATTERN_FULL_RAINBOW: u16 =  10;
-pub const PATTERN_SOLID: u16 =         20;
-pub const PATTERN_N_TONES: u16 =       30;
+pub const PATTERN_TWO_TONES: u16 = 4;
+pub const PATTERN_OPPOSED_TONES: u16 = 5;
+pub const PATTERN_TRIAD_TONES: u16 = 6;
+pub const PATTERN_UNUSED: u16 = 7;
+pub const PATTERN_HANABI: u16 = 8;
+pub const PATTERN_Q2: u16 = 9;
+pub const PATTERN_FULL_RAINBOW: u16 = 10;
+pub const PATTERN_SOLID: u16 = 20;
+pub const PATTERN_N_TONES: u16 = 30;
 //pub fn PATTERN_RAND_N_TONES() u16 { PATTERN_N_TONES+2+(rand()%3); }
 pub const AGGRESSIVE_REVERSION: u16 = 100;
 
-pub const PATTERN_SACN_COLOR: u16 =         2048; // range from here to 13x here
-pub const PATTERN_SACN_TEXTURE: u16 =        256;
-pub const PATTERN_SACN_INTENSITY: u16 =        1;
-pub const PATTERN_SACN_INTENSE: u16 =        255;
+pub const PATTERN_SACN_COLOR: u16 = 2048; // range from here to 13x here
+pub const PATTERN_SACN_TEXTURE: u16 = 256;
+pub const PATTERN_SACN_INTENSITY: u16 = 1;
+pub const PATTERN_SACN_INTENSE: u16 = 255;
 
 pub fn PATTERN_SACN(color: u16, texture: u16, intensity: u16) u16 {
-    return
-        (1+color)*PATTERN_SACN_COLOR
-        + texture*PATTERN_SACN_TEXTURE
-        + intensity*PATTERN_SACN_INTENSITY
-    ;
+    return (1 + color) * PATTERN_SACN_COLOR + texture * PATTERN_SACN_TEXTURE + intensity * PATTERN_SACN_INTENSITY;
 }
 pub fn PATTERN_IS_SACN(pattern: u16) u16 {
     return pattern >= PATTERN_SACN_COLOR;
 }
 pub fn PATTERN_SACN_GET_COLOR(pattern: u16) u16 {
-    return pattern/PATTERN_SACN_COLOR - 1;
+    return pattern / PATTERN_SACN_COLOR - 1;
 }
 pub fn PATTERN_SACN_GET_TEXTURE(pattern: u16) u16 {
-    return (pattern%PATTERN_SACN_COLOR) / PATTERN_SACN_TEXTURE;
+    return (pattern % PATTERN_SACN_COLOR) / PATTERN_SACN_TEXTURE;
 }
 pub fn PATTERN_SACN_GET_INTENSITY(pattern: u16) u16 {
     return pattern % PATTERN_SACN_TEXTURE;
 }
 
-pub const SCENE_BASE: u16              =  0;
-pub const SCENE_NO_HIBERNATION: u16    =  1;
+pub const SCENE_BASE: u16 = 0;
+pub const SCENE_NO_HIBERNATION: u16 = 1;
 pub const SCENE_CIRCLING_RAINBOWS: u16 = 10;
-pub const SCENE_Q2: u16                = 50;
+pub const SCENE_Q2: u16 = 50;
 
 pub const MENU_ACTIONS: u16 = 1000;
-pub const MENU_SCENES: u16  = 2000;
+pub const MENU_SCENES: u16 = 2000;
