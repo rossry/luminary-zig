@@ -1,3 +1,5 @@
+// if you change these, make corresponding changes to constants.zig
+
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
@@ -144,6 +146,7 @@
 #define TURING_DIFFUSION_PASSES    3
 #define RA2T_I                     0.765 // 0.35
 
+// ncurses output
 //#define OUTPUT_NCURSES
 
 // gif output

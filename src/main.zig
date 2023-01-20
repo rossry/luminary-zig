@@ -1,20 +1,30 @@
 const std = @import("std");
 const alloc = std.heap.c_allocator; // TODO-C: change to std.heap.GeneralPurposeAllocator
 
-const spectrary: bool = false;
-const umbrary:   bool = false;
+const constants = @import("constants.zig");
+
+const SPECTRARY: bool = constants.SPECTRARY;
+const UMBRARY:   bool = constants.UMBRARY;
+
+const ROWS: u16 = constants.ROWS;
+const COLS: u16 = constants.COLS;
 
 const main_c = @cImport({
     // See https://github.com/ziglang/zig/issues/515
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("main.h");
 });
-const spectrary_c = if (!spectrary) undefined else @cImport({
+const display_c = @cImport({
+    // See https://github.com/ziglang/zig/issues/515
+    @cDefine("_NO_CRT_STDIO_INLINE", "1");
+    @cInclude("display.h");
+});
+const spectrary_c = if (!SPECTRARY) undefined else @cImport({
     // See https://github.com/ziglang/zig/issues/515
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("spectrary.h");
 });
-const umbrary_c = if (!umbrary) undefined else @cImport({
+const umbrary_c = if (!UMBRARY) undefined else @cImport({
     // See https://github.com/ziglang/zig/issues/515
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("umbrary.h");
@@ -48,8 +58,8 @@ pub fn main() !u8 {
         }
     }
     
-    if (spectrary) {
-        if (spectrary) {
+    if (SPECTRARY) {
+        if (SPECTRARY) {
             unreachable; // handle spectrary args
         }
         if (spectrary_active) {
@@ -59,8 +69,8 @@ pub fn main() !u8 {
         spectrary_active = false;
     }
     
-    if (umbrary) {
-        if (umbrary) {
+    if (UMBRARY) {
+        if (UMBRARY) {
             unreachable; // handle umbrary args
         }
         if (umbrary_active) {
