@@ -49,7 +49,9 @@ pub fn main() !u8 {
     }
     
     if (spectrary) {
-        unreachable; // handle spectrary args
+        if (spectrary) {
+            unreachable; // handle spectrary args
+        }
         if (spectrary_active) {
             spectrary_c.spectrary_init(spectrary_file);
         }
@@ -58,7 +60,9 @@ pub fn main() !u8 {
     }
     
     if (umbrary) {
-        unreachable; // handle umbrary args
+        if (umbrary) {
+            unreachable; // handle umbrary args
+        }
         if (umbrary_active) {
             umbrary_c.umbrary_init(umbrary_bmp_format_string);
         }
