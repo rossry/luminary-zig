@@ -77,19 +77,6 @@ int c_run(
     
     srand(5);
     
-    #ifdef SACN_SERVER
-        #ifdef SACN_TEST_CLIENT
-            sacn_test_client_start();
-        #endif /* SACN_TEST_CLIENT */
-        
-        sacn_server_start();
-        
-        #ifdef SACN_TEST_CLIENT
-            sacn_test_client_set_level(CHANNEL_M_MODE, 200);
-            sacn_test_client_set_level(CHANNEL_M_MODE, 200); // duped to sync seq no.
-        #endif /* SACN_TEST_CLIENT */
-    #endif /* SACN_SERVER */
-    
     struct timeval start, computed, drawn, refreshed, handled, slept, stop, fio_start, fio_stop;
     int n_dirty_pixels;
     double compute_avg, fio_avg, draw_avg, refresh_avg, wait_avg, sleep_avg, total_avg, n_dirty_pixels_avg;

@@ -36,6 +36,15 @@ const umbrary_c = if (!UMBRARY) undefined else @cImport({
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("umbrary.h");
 });
+const sacn_c = if (!constants.SACN_SERVER) undefined else @cImport({
+    // See https://github.com/ziglang/zig/issues/515
+    @cDefine("_NO_CRT_STDIO_INLINE", "1");
+    @cInclude("sacn-server-luminary.h");
+    @cInclude("sacn-constants-luminary.h");
+    if (constants.SACN_TEST_CLIENT) {
+        @cInclude("sacn-test-client-luminary.h");
+    }
+});
 
 pub fn main() !u8 {
     const args = try std.process.argsAlloc(alloc);
@@ -192,6 +201,19 @@ pub fn main() !u8 {
     };
     
     var in_chr: c_int = 0;
+    
+    if (constants.SACN_SERVER) {
+        if (constants.SACN_TEST_CLIENT) {
+            sacn_c.sacn_test_client_start();
+        }
+        
+        sacn_c.sacn_server_start();
+        
+        if (constants.SACN_TEST_CLIENT) {
+            sacn_c.sacn_test_client_set_level(constants.CHANNEL_M_MODE, 200);
+            sacn_c.sacn_test_client_set_level(constants.CHANNEL_M_MODE, 200); // duped to sync seq no.
+        }
+    }
 
     return @intCast(u8, main_c.c_run(
         @intCast(c_int, epoch_limit),
