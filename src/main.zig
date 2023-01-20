@@ -45,6 +45,10 @@ const sacn_c = if (!constants.SACN_SERVER) undefined else @cImport({
         @cInclude("sacn-test-client-luminary.h");
     }
 });
+var sacn_channels: sacn_c.sacn_channels_t = if (constants.SACN_SERVER) unreachable else undefined;
+var sacn_test_client_color: u8 = if (constants.SACN_SERVER) 0 else undefined;
+var sacn_test_client_pattern: u8 = if (constants.SACN_SERVER) 0 else undefined;
+var sacn_test_client_transition: u8 =if (constants.SACN_SERVER) 0 else undefined;
 
 pub fn main() !u8 {
     const args = try std.process.argsAlloc(alloc);
