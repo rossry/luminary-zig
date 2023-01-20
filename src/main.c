@@ -77,17 +77,6 @@ int c_run(
     
     srand(5);
     
-    for (int xy = 0; xy < ROWS * COLS; ++xy) {
-        rainbow_0[xy] = RAND_COLOR;
-        rainbow_0_next[xy] = RAND_COLOR;
-        rainbow_1[xy] = RAND_COLOR;
-        rainbow_1_next[xy] = RAND_COLOR;
-        
-        turing_u[xy].state = (double)rand() / (double)(RAND_MAX/2) - 1.0;
-        
-        turing_v[xy].state = (double)rand() / (double)(RAND_MAX/2) - 1.0;
-    }
-    
     #ifdef SACN_SERVER
         #ifdef SACN_TEST_CLIENT
             sacn_test_client_start();

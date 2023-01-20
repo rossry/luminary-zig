@@ -1,5 +1,6 @@
 const std = @import("std");
 const alloc = std.heap.c_allocator; // TODO-C: change to std.heap.GeneralPurposeAllocator
+var r = std.rand.DefaultPrng.init(2);
 
 const constants = @import("constants.zig");
 
@@ -105,11 +106,27 @@ pub fn main() !u8 {
     
     var rainbow_tone = [_]c_int{0} ** (ROWS * COLS);
     
-    var rainbow_0 = [_]c_int{0} ** (ROWS * COLS); // TODO: RAND_COLOR() instead
-    var rainbow_0_next = [_]c_int{0} ** (ROWS * COLS); // TODO: RAND_COLOR() instead
+    var rainbow_0 = init: {
+        var xs: [ROWS*COLS]c_int = undefined;
+        for (xs) |*x| {x.* = constants.RAND_COLOR(r.random());}
+        break :init xs;
+    };
+    var rainbow_0_next = init: {
+        var xs: [ROWS*COLS]c_int = undefined;
+        for (xs) |*x| {x.* = constants.RAND_COLOR(r.random());}
+        break :init xs;
+    };
     var impatience_0 = [_]c_int{0} ** (ROWS * COLS);
-    var rainbow_1 = [_]c_int{0} ** (ROWS * COLS); // TODO: RAND_COLOR() instead
-    var rainbow_1_next = [_]c_int{0} ** (ROWS * COLS); // TODO: RAND_COLOR() instead
+    var rainbow_1 = init: {
+        var xs: [ROWS*COLS]c_int = undefined;
+        for (xs) |*x| {x.* = constants.RAND_COLOR(r.random());}
+        break :init xs;
+    };
+    var rainbow_1_next = init: {
+        var xs: [ROWS*COLS]c_int = undefined;
+        for (xs) |*x| {x.* = constants.RAND_COLOR(r.random());}
+        break :init xs;
+    };
     var impatience_1 = [_]c_int{0} ** (ROWS * COLS);
     
     var pressure_self = [_]c_int{0} ** (ROWS * COLS);
@@ -132,11 +149,11 @@ pub fn main() !u8 {
     var waves_diag_next = [_]c_int{0} ** (ROWS * COLS);
     
     var turing_u = init: {
-        var ts: [ROWS*COLS]main_c.turing_vector_t = undefined;
-        for (ts) |*t| {
+        var xs: [ROWS*COLS]main_c.turing_vector_t = undefined;
+        for (xs) |*x| {
             const MAX_TURING_SCALES: u16 = 5;
-            t.* = main_c.turing_vector_t{
-                .state = 0.0, // TODO: rand_between(-0.5, 0.5) instead
+            x.* = main_c.turing_vector_t{
+                .state = r.random().float(f64)*2 - 1.0,
                 .n_scales = @intCast(c_int, 5),
                 .scale = undefined,
                 .increment = [MAX_TURING_SCALES]f64{
@@ -150,13 +167,13 @@ pub fn main() !u8 {
                 .debug = @intCast(c_int, 0),
             };
         }
-        break :init ts;
+        break :init xs;
     };
     var turing_v = init: {
-        var ts: [ROWS*COLS]main_c.turing_vector_t = undefined;
-        for (ts) |*t| {
+        var xs: [ROWS*COLS]main_c.turing_vector_t = undefined;
+        for (xs) |*x| {
             const MAX_TURING_SCALES: u16 = 5;
-            t.* = main_c.turing_vector_t{
+            x.* = main_c.turing_vector_t{
                 .state = 0.0, // TODO: rand_between(-0.5, 0.5) instead
                 .n_scales = @intCast(c_int, 5),
                 .scale = undefined,
@@ -171,7 +188,7 @@ pub fn main() !u8 {
                 .debug = @intCast(c_int, 0),
             };
         }
-        break :init ts;
+        break :init xs;
     };
     
     var in_chr: c_int = 0;

@@ -1,5 +1,7 @@
 // if you change these, make corresponding changes to constants.h
 
+const std = @import("std");
+
 // pub fn RAND_DOUBLE() callconv(.Inline) u16 {return (double)rand() / (double)(RAND_MAX);}
 
 // input, output, control
@@ -158,7 +160,9 @@ pub const cairo = if (OUTPUT_CAIRO) struct {
 
 // other constants (probably don't mess with these)
 pub const COLORS: u16 = 12;
-//pub fn RAND_COLOR() callconv(.Inline) u16 { return rand() % COLORS; }
+pub fn RAND_COLOR(r: std.rand.Random) callconv(.Inline) u16 {
+    return r.int(u16) % COLORS;
+}
 pub const MAKE_GREY: u16 = 20;
 pub const MAKE_DARKER: u16 = 40;
 pub const EXTRA_COLOR: u16 = 80;
