@@ -39,60 +39,43 @@ double usec_time_elapsed(struct timeval *from, struct timeval *to) {
 int c_run(
     int epoch_limit,
     int spectrary_active,
-    int umbrary_active
+    int umbrary_active,
+    int epoch,
+    int scene,
+    int menu_context,
+    int scratch[],
+    int control_directive_0[],
+    int control_directive_0_next[],
+    int control_directive_1[],
+    int control_directive_1_next[],
+    int control_orth[],
+    int control_orth_next[],
+    int control_diag[],
+    int control_diag_next[],
+    int rainbow_tone[],
+    int rainbow_0[],
+    int rainbow_0_next[],
+    int impatience_0[],
+    int rainbow_1[],
+    int rainbow_1_next[],
+    int impatience_1[],
+    int pressure_self[],
+    int pressure_orth[],
+    int pressure_orth_next[],
+    int pressure_diag[],
+    int pressure_diag_next[],
+    double excitement[],
+    int waves_orth[],
+    int waves_orth_next[],
+    int waves_diag[],
+    int waves_diag_next[],
+    turing_vector_t turing_u[],
+    turing_vector_t turing_v[],
+    int in_chr
 ) {
     int n_cores = sysconf(_SC_NPROCESSORS_ONLN);
     
     srand(5);
-    
-    int epoch = 0;
-    int scene = SCENE_BASE;
-    
-    int menu_context = MENU_ACTIONS;
-    
-    int scratch[ROWS * COLS];
-    
-    int control_directive_0[ROWS * COLS];
-    int control_directive_0_next[ROWS * COLS];
-    int control_directive_1[ROWS * COLS];
-    int control_directive_1_next[ROWS * COLS];
-    int control_orth[ROWS * COLS];
-    int control_orth_next[ROWS * COLS];
-    int control_diag[ROWS * COLS];
-    int control_diag_next[ROWS * COLS];
-    
-    int rainbow_tone[ROWS * COLS];
-    
-    int rainbow_0[ROWS * COLS];
-    int rainbow_0_next[ROWS * COLS];
-    int impatience_0[ROWS * COLS];
-    int rainbow_1[ROWS * COLS];
-    int rainbow_1_next[ROWS * COLS];
-    int impatience_1[ROWS * COLS];
-    
-    int pressure_self[ROWS * COLS];
-    int pressure_orth[ROWS * COLS];
-    int pressure_orth_next[ROWS * COLS];
-    int pressure_diag[ROWS * COLS];
-    int pressure_diag_next[ROWS * COLS];
-    
-    double excitement[ROWS * COLS];
-    
-    /*
-    // needed to drive waves_(orth|diag)'s top row
-    // hand-tuned to radiate from a center 84 cells above the midpoint of the top side
-    int waves_base[] = WAVES_BASE_ARRAY;
-    int waves_base_z_orig = 16;
-    */
-    int waves_orth[ROWS * COLS];
-    int waves_orth_next[ROWS * COLS];
-    int waves_diag[ROWS * COLS];
-    int waves_diag_next[ROWS * COLS];
-
-    turing_vector_t turing_u[ROWS * COLS];
-    turing_vector_t turing_v[ROWS * COLS];
-    
-    int in_chr = 0;
     
     for (int xy = 0; xy < ROWS * COLS; ++xy) {
         scratch[xy] = 0;

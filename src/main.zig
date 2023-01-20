@@ -12,7 +12,13 @@ const COLS: u16 = constants.COLS;
 const main_c = @cImport({
     // See https://github.com/ziglang/zig/issues/515
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
+    @cInclude("cellular.h");
     @cInclude("main.h");
+});
+const cellular_c = @cImport({
+    // See https://github.com/ziglang/zig/issues/515
+    @cDefine("_NO_CRT_STDIO_INLINE", "1");
+    @cInclude("cellular.h");
 });
 const display_c = @cImport({
     // See https://github.com/ziglang/zig/issues/515
@@ -81,10 +87,130 @@ pub fn main() !u8 {
     }
 
     display_c.display_init();
+    var epoch: c_int = 0;
+    var scene: c_int = constants.SCENE_BASE;
+    
+    var menu_context: c_int = constants.MENU_ACTIONS;
+    
+    var scratch = [_]c_int{0} ** (ROWS * COLS);
+    
+    var control_directive_0 = [_]c_int{0} ** (ROWS * COLS);
+    var control_directive_0_next = [_]c_int{0} ** (ROWS * COLS);
+    var control_directive_1 = [_]c_int{0} ** (ROWS * COLS);
+    var control_directive_1_next = [_]c_int{0} ** (ROWS * COLS);
+    var control_orth = [_]c_int{0} ** (ROWS * COLS);
+    var control_orth_next = [_]c_int{0} ** (ROWS * COLS);
+    var control_diag = [_]c_int{0} ** (ROWS * COLS);
+    var control_diag_next = [_]c_int{0} ** (ROWS * COLS);
+    
+    var rainbow_tone = [_]c_int{0} ** (ROWS * COLS);
+    
+    var rainbow_0 = [_]c_int{0} ** (ROWS * COLS); // TODO: RAND_COLOR() instead
+    var rainbow_0_next = [_]c_int{0} ** (ROWS * COLS); // TODO: RAND_COLOR() instead
+    var impatience_0 = [_]c_int{0} ** (ROWS * COLS);
+    var rainbow_1 = [_]c_int{0} ** (ROWS * COLS); // TODO: RAND_COLOR() instead
+    var rainbow_1_next = [_]c_int{0} ** (ROWS * COLS); // TODO: RAND_COLOR() instead
+    var impatience_1 = [_]c_int{0} ** (ROWS * COLS);
+    
+    var pressure_self = [_]c_int{0} ** (ROWS * COLS);
+    var pressure_orth = [_]c_int{0} ** (ROWS * COLS);
+    var pressure_orth_next = [_]c_int{0} ** (ROWS * COLS);
+    var pressure_diag = [_]c_int{0} ** (ROWS * COLS);
+    var pressure_diag_next = [_]c_int{0} ** (ROWS * COLS);
+    
+    var excitement = [_]f64{0.0} ** (ROWS * COLS);
+    
+    
+    //// needed to drive waves_(orth|diag)'s top row
+    //// hand-tuned to radiate from a center 84 cells above the midpoint of the top side
+    //int waves_base[] = WAVES_BASE_ARRAY;
+    //int waves_base_z_orig = 16;
+    
+    var waves_orth = [_]c_int{0} ** (ROWS * COLS);
+    var waves_orth_next = [_]c_int{0} ** (ROWS * COLS);
+    var waves_diag = [_]c_int{0} ** (ROWS * COLS);
+    var waves_diag_next = [_]c_int{0} ** (ROWS * COLS);
+    
+    var turing_u = init: {
+        var ts: [ROWS*COLS]main_c.turing_vector_t = undefined;
+        for (ts) |*t| {
+            const MAX_TURING_SCALES: u16 = 5;
+            t.* = main_c.turing_vector_t{
+                .state = 0.0, // TODO: rand_between(-0.5, 0.5) instead
+                .n_scales = @intCast(c_int, 5),
+                .scale = undefined,
+                .increment = [MAX_TURING_SCALES]f64{
+                    0.020,
+                    0.028,
+                    0.036,
+                    0.044,
+                    0.052,
+                },
+                
+                .debug = @intCast(c_int, 0),
+            };
+        }
+        break :init ts;
+    };
+    var turing_v = init: {
+        var ts: [ROWS*COLS]main_c.turing_vector_t = undefined;
+        for (ts) |*t| {
+            const MAX_TURING_SCALES: u16 = 5;
+            t.* = main_c.turing_vector_t{
+                .state = 0.0, // TODO: rand_between(-0.5, 0.5) instead
+                .n_scales = @intCast(c_int, 5),
+                .scale = undefined,
+                .increment = [MAX_TURING_SCALES]f64{
+                    0.020,
+                    0.028,
+                    0.036,
+                    0.044,
+                    0.052,
+                },
+                
+                .debug = @intCast(c_int, 0),
+            };
+        }
+        break :init ts;
+    };
+    
+    var in_chr: c_int = 0;
 
     return @intCast(u8, main_c.c_run(
         @intCast(c_int, epoch_limit),
         @boolToInt(spectrary_active),
         @boolToInt(umbrary_active),
+        epoch,
+        scene,
+        menu_context,
+        &scratch,
+        &control_directive_0,
+        &control_directive_0_next,
+        &control_directive_1,
+        &control_directive_1_next,
+        &control_orth,
+        &control_orth_next,
+        &control_diag,
+        &control_diag_next,
+        &rainbow_tone,
+        &rainbow_0,
+        &rainbow_0_next,
+        &impatience_0,
+        &rainbow_1,
+        &rainbow_1_next,
+        &impatience_1,
+        &pressure_self,
+        &pressure_orth,
+        &pressure_orth_next,
+        &pressure_diag,
+        &pressure_diag_next,
+        &excitement,
+        &waves_orth,
+        &waves_orth_next,
+        &waves_diag,
+        &waves_diag_next,
+        @ptrCast([*c]main_c.turing_vector_t, &turing_u),
+        @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+        in_chr,
     ));
 }
