@@ -160,7 +160,7 @@ pub const cairo = if (OUTPUT_CAIRO) struct {
 
 // other constants (probably don't mess with these)
 pub const COLORS: u16 = 12;
-pub fn RAND_COLOR(r: std.rand.Random) callconv(.Inline) u16 {
+pub inline fn RAND_COLOR(r: std.rand.Random) u16 {
     return r.int(u16) % COLORS;
 }
 pub const MAKE_GREY: u16 = 20;

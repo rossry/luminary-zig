@@ -48,7 +48,7 @@ const sacn_c = if (!constants.SACN_SERVER) undefined else @cImport({
 var sacn_channels: sacn_c.sacn_channels_t = if (constants.SACN_SERVER) unreachable else undefined;
 var sacn_test_client_color: u8 = if (constants.SACN_SERVER) 0 else undefined;
 var sacn_test_client_pattern: u8 = if (constants.SACN_SERVER) 0 else undefined;
-var sacn_test_client_transition: u8 =if (constants.SACN_SERVER) 0 else undefined;
+var sacn_test_client_transition: u8 = if (constants.SACN_SERVER) 0 else undefined;
 
 pub fn main() !u8 {
     const args = try std.process.argsAlloc(alloc);
@@ -103,11 +103,11 @@ pub fn main() !u8 {
     display_c.display_init();
     var epoch: c_int = 0;
     var scene: c_int = constants.SCENE_BASE;
-    
+
     var menu_context: c_int = constants.MENU_ACTIONS;
-    
+
     var scratch = [_]c_int{0} ** (ROWS * COLS);
-    
+
     var control_directive_0 = [_]c_int{0} ** (ROWS * COLS);
     var control_directive_0_next = [_]c_int{0} ** (ROWS * COLS);
     var control_directive_1 = [_]c_int{0} ** (ROWS * COLS);
@@ -116,57 +116,64 @@ pub fn main() !u8 {
     var control_orth_next = [_]c_int{0} ** (ROWS * COLS);
     var control_diag = [_]c_int{0} ** (ROWS * COLS);
     var control_diag_next = [_]c_int{0} ** (ROWS * COLS);
-    
+
     var rainbow_tone = [_]c_int{0} ** (ROWS * COLS);
-    
+
     var rainbow_0 = init: {
-        var xs: [ROWS*COLS]c_int = undefined;
-        for (xs) |*x| {x.* = constants.RAND_COLOR(r.random());}
+        var xs: [ROWS * COLS]c_int = undefined;
+        for (xs) |*x| {
+            x.* = constants.RAND_COLOR(r.random());
+        }
         break :init xs;
     };
     var rainbow_0_next = init: {
-        var xs: [ROWS*COLS]c_int = undefined;
-        for (xs) |*x| {x.* = constants.RAND_COLOR(r.random());}
+        var xs: [ROWS * COLS]c_int = undefined;
+        for (xs) |*x| {
+            x.* = constants.RAND_COLOR(r.random());
+        }
         break :init xs;
     };
     var impatience_0 = [_]c_int{0} ** (ROWS * COLS);
     var rainbow_1 = init: {
-        var xs: [ROWS*COLS]c_int = undefined;
-        for (xs) |*x| {x.* = constants.RAND_COLOR(r.random());}
+        var xs: [ROWS * COLS]c_int = undefined;
+        for (xs) |*x| {
+            x.* = constants.RAND_COLOR(r.random());
+        }
         break :init xs;
     };
     var rainbow_1_next = init: {
-        var xs: [ROWS*COLS]c_int = undefined;
-        for (xs) |*x| {x.* = constants.RAND_COLOR(r.random());}
+        var xs: [ROWS * COLS]c_int = undefined;
+        for (xs) |*x| {
+            x.* = constants.RAND_COLOR(r.random());
+        }
         break :init xs;
     };
     var impatience_1 = [_]c_int{0} ** (ROWS * COLS);
-    
+
     var pressure_self = [_]c_int{0} ** (ROWS * COLS);
     var pressure_orth = [_]c_int{0} ** (ROWS * COLS);
     var pressure_orth_next = [_]c_int{0} ** (ROWS * COLS);
     var pressure_diag = [_]c_int{0} ** (ROWS * COLS);
     var pressure_diag_next = [_]c_int{0} ** (ROWS * COLS);
-    
+
     var excitement = [_]f64{0.0} ** (ROWS * COLS);
-    
-    
+
     //// needed to drive waves_(orth|diag)'s top row
     //// hand-tuned to radiate from a center 84 cells above the midpoint of the top side
     //int waves_base[] = WAVES_BASE_ARRAY;
     //int waves_base_z_orig = 16;
-    
+
     var waves_orth = [_]c_int{0} ** (ROWS * COLS);
     var waves_orth_next = [_]c_int{0} ** (ROWS * COLS);
     var waves_diag = [_]c_int{0} ** (ROWS * COLS);
     var waves_diag_next = [_]c_int{0} ** (ROWS * COLS);
-    
+
     var turing_u = init: {
-        var xs: [ROWS*COLS]main_c.turing_vector_t = undefined;
+        var xs: [ROWS * COLS]main_c.turing_vector_t = undefined;
         for (xs) |*x| {
             const MAX_TURING_SCALES: u16 = 5;
             x.* = main_c.turing_vector_t{
-                .state = r.random().float(f64)*2 - 1.0,
+                .state = r.random().float(f64) * 2 - 1.0,
                 .n_scales = @intCast(c_int, 5),
                 .scale = undefined,
                 .increment = [MAX_TURING_SCALES]f64{
@@ -176,14 +183,14 @@ pub fn main() !u8 {
                     0.044,
                     0.052,
                 },
-                
+
                 .debug = @intCast(c_int, 0),
             };
         }
         break :init xs;
     };
     var turing_v = init: {
-        var xs: [ROWS*COLS]main_c.turing_vector_t = undefined;
+        var xs: [ROWS * COLS]main_c.turing_vector_t = undefined;
         for (xs) |*x| {
             const MAX_TURING_SCALES: u16 = 5;
             x.* = main_c.turing_vector_t{
@@ -197,22 +204,22 @@ pub fn main() !u8 {
                     0.044,
                     0.052,
                 },
-                
+
                 .debug = @intCast(c_int, 0),
             };
         }
         break :init xs;
     };
-    
+
     var in_chr: c_int = 0;
-    
+
     if (constants.SACN_SERVER) {
         if (constants.SACN_TEST_CLIENT) {
             sacn_c.sacn_test_client_start();
         }
-        
+
         sacn_c.sacn_server_start();
-        
+
         if (constants.SACN_TEST_CLIENT) {
             sacn_c.sacn_test_client_set_level(constants.CHANNEL_M_MODE, 200);
             sacn_c.sacn_test_client_set_level(constants.CHANNEL_M_MODE, 200); // duped to sync seq no.
