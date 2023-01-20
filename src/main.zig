@@ -80,6 +80,8 @@ pub fn main() !u8 {
         umbrary_active = false;
     }
     
+    display_c.display_init();
+    
     return @intCast(u8,
         main_c.c_run(
             @intCast(c_int, epoch_limit),

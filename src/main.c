@@ -43,8 +43,6 @@ int c_run(
 ) {
     int n_cores = sysconf(_SC_NPROCESSORS_ONLN);
     
-    display_init();
-    
     srand(5);
     
     int epoch = 0;
