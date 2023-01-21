@@ -910,7 +910,7 @@ void c_epoch(
     }
     // end flush display
     
-    start = stop;
+    *start = *stop;
 }
 
 void c_exit() {
