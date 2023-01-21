@@ -225,11 +225,11 @@ pub fn main() !u8 {
             sacn_c.sacn_test_client_set_level(constants.CHANNEL_M_MODE, 200); // duped to sync seq no.
         }
     }
-    
+
     // performance-monitoring variables
-    var start: main_c.timeval_t = init:{
-        var x:main_c.timeval_t = undefined;
-        _  = main_c.gettimeofday(&x, null);
+    var start: main_c.timeval_t = init: {
+        var x: main_c.timeval_t = undefined;
+        _ = main_c.gettimeofday(&x, null);
         break :init x;
     };
     var computed: main_c.timeval_t = undefined;
@@ -249,13 +249,13 @@ pub fn main() !u8 {
     var sleep_avg: f64 = 0;
     var total_avg: f64 = 0;
     var n_dirty_pixels_avg: f64 = 0;
-    
+
     main_c.c_init();
     defer main_c.c_exit();
-    
+
     while (epoch <= epoch_limit or epoch_limit <= 0) {
         epoch += 1;
-        
+
         main_c.c_compute_cyclic_evolution(
             epoch,
             &scratch,
@@ -286,7 +286,7 @@ pub fn main() !u8 {
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
         );
-        
+
         main_c.c_compute_fio_step(
             @boolToInt(spectrary_active),
             @boolToInt(umbrary_active),
@@ -294,7 +294,7 @@ pub fn main() !u8 {
             &fio_start,
             &fio_stop,
         );
-        
+
         main_c.c_compute_turing_evolution(
             @boolToInt(spectrary_active),
             @boolToInt(umbrary_active),
@@ -308,7 +308,7 @@ pub fn main() !u8 {
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
             &computed,
         );
-        
+
         main_c.c_draw_and_io(
             @boolToInt(spectrary_active),
             @boolToInt(umbrary_active),
@@ -337,7 +337,7 @@ pub fn main() !u8 {
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
             &drawn,
         );
-        
+
         main_c.c_draw_ui(
             @boolToInt(spectrary_active),
             @boolToInt(umbrary_active),
@@ -371,6 +371,6 @@ pub fn main() !u8 {
             &n_dirty_pixels_avg,
         );
     }
-    
+
     return 0;
 }

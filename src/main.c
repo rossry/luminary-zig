@@ -170,11 +170,11 @@ void c_compute_cyclic_evolution(
                     rainbow_0_next[xy] != rainbow_0[xy]
                     && rainbow_0_next[xy] != color_of_turing(xy, turing_u, turing_v)
                 ) {
-	        if (1) {
-		    rainbow_add_to_turing(xy, rainbow_0_next, turing_u, turing_v);
-	            if ((rainbow_0_next[xy] - rainbow_0[xy] + COLORS)%COLORS == 2) {
-  		        rainbow_add_to_turing(xy, rainbow_0_next, turing_u, turing_v);
-		    }
+                    if (1) {
+                        rainbow_add_to_turing(xy, rainbow_0_next, turing_u, turing_v);
+                        if ((rainbow_0_next[xy] - rainbow_0[xy] + COLORS)%COLORS == 2) {
+                            rainbow_add_to_turing(xy, rainbow_0_next, turing_u, turing_v);
+                        }
                     } else if (
                         (1 + rainbow_0_next[xy] - color_of_turing(xy, turing_u, turing_v) + COLORS)%COLORS
                         <= 3
@@ -196,21 +196,21 @@ void c_compute_cyclic_evolution(
                         // CR rrheingans-yoo: maybe compute/apply turing a few
                         // times at [xy] right now?
                     } else {
-	  	    if ((rainbow_0[xy] + 1 - color_of_turing(xy, turing_u, turing_v))%EXTRA_COLORS < EXTRA_COLORS/2) {
+                        if ((rainbow_0[xy] + 1 - color_of_turing(xy, turing_u, turing_v))%EXTRA_COLORS < EXTRA_COLORS/2) {
                             extra_color_to_turing(
                                 xy,
                                 (extra_color_of_turing(xy, turing_u, turing_v)-3+EXTRA_COLORS)%EXTRA_COLORS,
                                 turing_u,
                                 turing_v
                             );
-		    } else {
+                        } else {
                             extra_color_to_turing(
                                 xy,
                                 (extra_color_of_turing(xy, turing_u, turing_v)+3+EXTRA_COLORS)%EXTRA_COLORS,
                                 turing_u,
                                 turing_v
                             );
-		    }
+                        }
                         rainbow_0_next[xy] = rainbow_0[xy];
                     }
                 }
