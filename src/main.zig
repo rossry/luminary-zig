@@ -56,11 +56,11 @@ pub fn main() !u8 {
 
     var epoch_limit: u32 = 0;
 
-    var spectrary_active: bool = false;
+    var spectrary_active: bool = undefined;
     // this should be a 3dft.dat file, as produced by snd2fftw
     var spectrary_file: []u8 = undefined;
 
-    var umbrary_active: bool = false;
+    var umbrary_active: bool = undefined;
     // this should be a printf pattern that points to a bmp when passed an int
     // frame 1 needs to exist, and umbrary will scan until it finds a gap
     var umbrary_bmp_format_string: []u8 = undefined;
