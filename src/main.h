@@ -9,7 +9,7 @@ void c_exit();
 void c_epoch(
     int spectrary_active,
     int umbrary_active,
-    int* epoch,
+    int epoch,
     int scene,
     int menu_context,
     int scratch[],

@@ -254,10 +254,12 @@ pub fn main() !u8 {
     defer main_c.c_exit();
     
     while (epoch <= epoch_limit or epoch_limit <= 0) {
+        epoch += 1;
+        
         main_c.c_epoch(
             @boolToInt(spectrary_active),
             @boolToInt(umbrary_active),
-            &epoch,
+            epoch,
             scene,
             menu_context,
             &scratch,

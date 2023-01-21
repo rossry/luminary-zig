@@ -43,7 +43,7 @@ void c_init() {
 void c_epoch(
     int spectrary_active,
     int umbrary_active,
-    int* epoch,
+    int epoch,
     int scene,
     int menu_context,
     int scratch[],
@@ -94,8 +94,6 @@ void c_epoch(
     double* total_avg,
     double* n_dirty_pixels_avg
 ) {
-    ++(*epoch);
-    
     // begin computing evolution
     for (int xy = 0; xy < ROWS * COLS; ++xy) {
         #ifdef THROTTLE_LOOP
@@ -149,7 +147,7 @@ void c_epoch(
                 xy
             );
             
-            if ((*epoch) % WILDFIRE_SPEEDUP == 0) {
+            if ((epoch) % WILDFIRE_SPEEDUP == 0) {
                 // evolve rainbow_0
                 // handled below, with separate timing logic
                 //rainbow_0_next[xy] = compute_cyclic(rainbow_0, impatience_0, xy);
@@ -180,7 +178,7 @@ void c_epoch(
             
             if (
                 1
-                && (*epoch) % WILDFIRE_SPEEDUP == 0
+                && (epoch) % WILDFIRE_SPEEDUP == 0
                 #ifdef UMBRARY
                     && !umbrary_active
                 #endif /* UMBRARY */
@@ -269,7 +267,7 @@ void c_epoch(
         // default: pass
         }
         
-        if (x == (*epoch) % COLS && scene == SCENE_CIRCLING_RAINBOWS) {
+        if (x == (epoch) % COLS && scene == SCENE_CIRCLING_RAINBOWS) {
             xy = (PETAL_ROWS+2)*COLS + x;
             control_directive_0_next[xy] = PATTERN_FULL_RAINBOW + AGGRESSIVE_REVERSION;
             control_directive_1_next[xy] = PATTERN_TWO_TONES;
@@ -297,7 +295,7 @@ void c_epoch(
     #ifdef UMBRARY
     if (umbrary_active) {
         //umbrary_update(0);
-        umbrary_update((*epoch)*22222);
+        umbrary_update((epoch)*22222);
     }
     #endif /* UMBRARY */
     
@@ -341,10 +339,10 @@ void c_epoch(
             turing_u,
             turing_v,
             xy,
-            //1000.0 / max(1000,((*epoch)%3000)),
+            //1000.0 / max(1000,((epoch)%3000)),
             1.0,
             //(double)rainbow_0_next[xy] / 12.0
-            (double)((*epoch)%1000)/(1000.0)
+            (double)((epoch)%1000)/(1000.0)
         );
         
         #ifdef UMBRARY
@@ -354,12 +352,12 @@ void c_epoch(
             ) {
                 switch (umbrary_level[(xy/COLS)*UMBRARY_OUTPUT_COLS+(xy%COLS)]) {
                 case 1:
-                    rainbow_0_next[xy] = (8+((*epoch)/900))%COLORS;
-                    rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((*epoch)/300)%3-1);
+                    rainbow_0_next[xy] = (8+((epoch)/900))%COLORS;
+                    rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((epoch)/300)%3-1);
                     break;
                 case -1:
-                    rainbow_0_next[xy] = (2+((*epoch)/900))%COLORS;
-                    rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((*epoch)/300)%3-1);
+                    rainbow_0_next[xy] = (2+((epoch)/900))%COLORS;
+                    rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((epoch)/300)%3-1);
                     break;
                 //default:
                     // pass
@@ -401,7 +399,7 @@ void c_epoch(
         
         #ifdef UMBRARY
         if (umbrary_active) {
-            if (*epoch > INITIALIZATION_EPOCHS) {
+            if (epoch > INITIALIZATION_EPOCHS) {
                 if (
                     xy%COLS < UMBRARY_OUTPUT_COLS
                     && xy/COLS < UMBRARY_OUTPUT_ROWS
@@ -423,7 +421,7 @@ void c_epoch(
                 }
             }
         } else {
-            if (*epoch > INITIALIZATION_EPOCHS) {
+            if (epoch > INITIALIZATION_EPOCHS) {
                  display_color(
                     xy,
                     color,
@@ -434,7 +432,7 @@ void c_epoch(
         #else /* UMBRARY */
             #ifdef SPECTRARY
             if (spectrary_active) {
-                if (*epoch > INITIALIZATION_EPOCHS) {
+                if (epoch > INITIALIZATION_EPOCHS) {
                     /* // 19-bin spectrary
                     int freq = SPECTRARY_FREQS - abs(color - EXTRA_COLORS/2 - EXTRA_COLOR);
                     int c = (color+EXTRA_COLORS*3/4-EXTRA_COLOR)%EXTRA_COLORS + EXTRA_COLOR;
@@ -474,7 +472,7 @@ void c_epoch(
                     }
                 }
             } else {
-                if (*epoch > INITIALIZATION_EPOCHS) {
+                if (epoch > INITIALIZATION_EPOCHS) {
                      display_color(
                         xy,
                         color,
@@ -483,7 +481,7 @@ void c_epoch(
                 }
             }
             #else /* SPECTRARY */
-                if (*epoch > INITIALIZATION_EPOCHS) {
+                if (epoch > INITIALIZATION_EPOCHS) {
                      display_color(
                         xy,
                         color,
@@ -548,9 +546,9 @@ void c_epoch(
     gettimeofday(drawn, NULL);
     
     // begin flush display
-    if (*epoch > INITIALIZATION_EPOCHS) {
-        if ((*epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
-            *n_dirty_pixels = display_flush(*epoch);
+    if (epoch > INITIALIZATION_EPOCHS) {
+        if ((epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
+            *n_dirty_pixels = display_flush(epoch);
             *n_dirty_pixels_avg = 0.99*(*n_dirty_pixels_avg) + 0.01*(*n_dirty_pixels);
         }
         
@@ -771,8 +769,8 @@ void c_epoch(
             usleep(USEC_PER_EPOCH - usec_time_elapsed(start, handled));
         }
     } else {
-        if ((*epoch) % 10 == 0) {
-            mvprintw(0, 0, "initializing (%.0f%%)", 100.0 * (*epoch) / INITIALIZATION_EPOCHS);
+        if ((epoch) % 10 == 0) {
+            mvprintw(0, 0, "initializing (%.0f%%)", 100.0 * (epoch) / INITIALIZATION_EPOCHS);
             refresh();
         }
         gettimeofday(refreshed, NULL);
@@ -787,7 +785,7 @@ void c_epoch(
     *compute_avg = 0.99*(*compute_avg) + 0.01*usec_time_elapsed(start, computed);
     *fio_avg = 0.99*(*fio_avg) + 0.01*usec_time_elapsed(fio_start, fio_stop);
     *draw_avg = 0.99*(*draw_avg) + 0.01*usec_time_elapsed(computed, drawn);
-    if ((*epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
+    if ((epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
         *refresh_avg = 0.99*(*refresh_avg) + 0.01*usec_time_elapsed(drawn, refreshed);
     }
     *wait_avg = 0.99*(*wait_avg) + 0.01*usec_time_elapsed(refreshed, handled);
@@ -801,7 +799,7 @@ void c_epoch(
     mvprintw(DIAGNOSTIC_ROWS+4, 2*DIAGNOSTIC_COLS-15, "wait:   %5.1fms", *wait_avg / THOUSAND);
     mvprintw(DIAGNOSTIC_ROWS+5, 2*DIAGNOSTIC_COLS-15, "sleep:  %5.1fms", *sleep_avg / THOUSAND);
     mvprintw(DIAGNOSTIC_ROWS+6, 2*DIAGNOSTIC_COLS-15, "[note: %s cores]", "??");
-    mvprintw(DIAGNOSTIC_ROWS+7, 2*DIAGNOSTIC_COLS-15, "epoch:%9d", *epoch);
+    mvprintw(DIAGNOSTIC_ROWS+7, 2*DIAGNOSTIC_COLS-15, "epoch:%9d", epoch);
     mvprintw(DIAGNOSTIC_ROWS+8, 2*DIAGNOSTIC_COLS-15, "Hz:  %7.1f/%d(/%d)  ", 1 / (*total_avg / MILLION), DISPLAY_FLUSH_EPOCHS, WILDFIRE_SPEEDUP);
     mvprintw(DIAGNOSTIC_ROWS+9, 2*DIAGNOSTIC_COLS-15, "usable:%5.1fms  ", USABLE_MSEC_PER_EPOCH);
     mvprintw(DIAGNOSTIC_ROWS+10,2*DIAGNOSTIC_COLS-15, "used:  %5.1fms  ", usec_time_elapsed(start, refreshed) / THOUSAND);
