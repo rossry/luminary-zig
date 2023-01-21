@@ -286,7 +286,7 @@ pub fn main() !u8 {
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
         );
-        
+
         _ = main_c.gettimeofday(&fio_start, null);
 
         main_c.c_compute_fio_step(
@@ -294,7 +294,7 @@ pub fn main() !u8 {
             @boolToInt(umbrary_active),
             epoch,
         );
-        
+
         _ = main_c.gettimeofday(&fio_stop, null);
 
         main_c.c_compute_turing_evolution(
@@ -309,7 +309,7 @@ pub fn main() !u8 {
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
         );
-    
+
         _ = main_c.gettimeofday(&computed, null);
 
         main_c.c_draw_and_io(
@@ -339,7 +339,7 @@ pub fn main() !u8 {
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
         );
-    
+
         _ = main_c.gettimeofday(&drawn, null);
 
         main_c.c_draw_ui(
@@ -375,7 +375,7 @@ pub fn main() !u8 {
             &n_dirty_pixels_avg,
         );
     }
-    
+
     start = stop;
 
     return 0;
