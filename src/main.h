@@ -7,7 +7,6 @@ void c_init();
 void c_exit();
 
 void c_epoch(
-    int epoch_limit,
     int spectrary_active,
     int umbrary_active,
     int* epoch,

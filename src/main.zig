@@ -255,7 +255,6 @@ pub fn main() !u8 {
     
     while (epoch <= epoch_limit or epoch_limit <= 0) {
         main_c.c_epoch(
-            @intCast(c_int, epoch_limit),
             @boolToInt(spectrary_active),
             @boolToInt(umbrary_active),
             &epoch,
