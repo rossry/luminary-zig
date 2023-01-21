@@ -36,6 +36,10 @@ double usec_time_elapsed(struct timeval *from, struct timeval *to) {
     return (double)(to->tv_usec - from->tv_usec) + (double)(to->tv_sec - from->tv_sec) * MILLION;
 }
 
+void c_init() {
+    srand(5);
+}
+
 int c_run(
     int epoch_limit,
     int spectrary_active,
@@ -71,19 +75,26 @@ int c_run(
     int waves_diag_next[],
     turing_vector_t turing_u[],
     turing_vector_t turing_v[],
-    int in_chr
+    int in_chr,
+    timeval_t* start,
+    timeval_t* computed,
+    timeval_t* drawn,
+    timeval_t* refreshed,
+    timeval_t* handled,
+    timeval_t* slept,
+    timeval_t* stop,
+    timeval_t* fio_start,
+    timeval_t* fio_stop,
+    int* n_dirty_pixels,
+    double* compute_avg,
+    double* fio_avg,
+    double* draw_avg,
+    double* refresh_avg,
+    double* wait_avg,
+    double* sleep_avg,
+    double* total_avg,
+    double* n_dirty_pixels_avg
 ) {
-    int n_cores = sysconf(_SC_NPROCESSORS_ONLN);
-    
-    srand(5);
-    
-    struct timeval start, computed, drawn, refreshed, handled, slept, stop, fio_start, fio_stop;
-    int n_dirty_pixels;
-    double compute_avg, fio_avg, draw_avg, refresh_avg, wait_avg, sleep_avg, total_avg, n_dirty_pixels_avg;
-    compute_avg = fio_avg = draw_avg = refresh_avg = wait_avg = sleep_avg = total_avg = n_dirty_pixels_avg = 0.0;
-    
-    gettimeofday(&start, NULL);
-    
     while (epoch <= epoch_limit || epoch_limit <= 0) {
         ++epoch;
         
@@ -277,7 +288,7 @@ int c_run(
         }
         */
         
-        gettimeofday(&fio_start, NULL);
+        gettimeofday(fio_start, NULL);
         
         #ifdef SPECTRARY
         if (spectrary_active) {
@@ -292,7 +303,7 @@ int c_run(
         }
         #endif /* UMBRARY */
         
-        gettimeofday(&fio_stop, NULL);
+        gettimeofday(fio_stop, NULL);
         
         for (int xy = 0; xy < ROWS * COLS; ++xy) {
             #ifdef THROTTLE_LOOP
@@ -366,7 +377,7 @@ int c_run(
         }
         // end computing evolution
         
-        gettimeofday(&computed, NULL);
+        gettimeofday(computed, NULL);
         
         // begin draw/increment mutex
         for (int xy = 0; xy < ROWS * COLS; ++xy) {
@@ -536,19 +547,19 @@ int c_run(
         #endif /* SPECTRARY */
         // end draw/increment mutex
         
-        gettimeofday(&drawn, NULL);
+        gettimeofday(drawn, NULL);
         
         // begin flush display
         if (epoch > INITIALIZATION_EPOCHS) {
             if (epoch % DISPLAY_FLUSH_EPOCHS == 0) {
-                n_dirty_pixels = display_flush(epoch);
-                n_dirty_pixels_avg = 0.99*n_dirty_pixels_avg + 0.01*n_dirty_pixels;
+                *n_dirty_pixels = display_flush(epoch);
+                *n_dirty_pixels_avg = 0.99*(*n_dirty_pixels_avg) + 0.01*(*n_dirty_pixels);
             }
             
-            gettimeofday(&refreshed, NULL);
+            gettimeofday(refreshed, NULL);
             
-            if (usec_time_elapsed(&start, &refreshed) < USABLE_USEC_PER_EPOCH) {
-                timeout(USABLE_MSEC_PER_EPOCH - usec_time_elapsed(&start, &refreshed) / THOUSAND);
+            if (usec_time_elapsed(start, refreshed) < USABLE_USEC_PER_EPOCH) {
+                timeout(USABLE_MSEC_PER_EPOCH - usec_time_elapsed(start, refreshed) / THOUSAND);
                 in_chr = getch();
             }
             
@@ -756,46 +767,46 @@ int c_run(
                 control_orth[xy] = max(control_orth[xy], 10000);
             }
             
-            gettimeofday(&handled, NULL);
+            gettimeofday(handled, NULL);
             
-            if (usec_time_elapsed(&start, &handled) < USEC_PER_EPOCH) {
-                usleep(USEC_PER_EPOCH - usec_time_elapsed(&start, &handled));
+            if (usec_time_elapsed(start, handled) < USEC_PER_EPOCH) {
+                usleep(USEC_PER_EPOCH - usec_time_elapsed(start, handled));
             }
         } else {
             if (epoch % 10 == 0) {
                 mvprintw(0, 0, "initializing (%.0f%%)", 100.0 * epoch / INITIALIZATION_EPOCHS);
                 refresh();
             }
-            gettimeofday(&refreshed, NULL);
-            gettimeofday(&handled, NULL);
+            gettimeofday(refreshed, NULL);
+            gettimeofday(handled, NULL);
         }
         
-        gettimeofday(&slept, NULL);
+        gettimeofday(slept, NULL);
         
-        gettimeofday(&stop, NULL);
+        gettimeofday(stop, NULL);
         
         // diagnostic printouts
-        compute_avg = 0.99*compute_avg + 0.01*usec_time_elapsed(&start, &computed);
-        fio_avg = 0.99*fio_avg + 0.01*usec_time_elapsed(&fio_start, &fio_stop);
-        draw_avg = 0.99*draw_avg + 0.01*usec_time_elapsed(&computed, &drawn);
+        *compute_avg = 0.99*(*compute_avg) + 0.01*usec_time_elapsed(start, computed);
+        *fio_avg = 0.99*(*fio_avg) + 0.01*usec_time_elapsed(fio_start, fio_stop);
+        *draw_avg = 0.99*(*draw_avg) + 0.01*usec_time_elapsed(computed, drawn);
         if (epoch % DISPLAY_FLUSH_EPOCHS == 0) {
-            refresh_avg = 0.99*refresh_avg + 0.01*usec_time_elapsed(&drawn, &refreshed);
+            *refresh_avg = 0.99*(*refresh_avg) + 0.01*usec_time_elapsed(drawn, refreshed);
         }
-        wait_avg = 0.99*wait_avg + 0.01*usec_time_elapsed(&refreshed, &handled);
-        sleep_avg = 0.99*sleep_avg + 0.01*usec_time_elapsed(&handled, &slept);
-        total_avg = 0.99*total_avg + 0.01*usec_time_elapsed(&start, &stop);
-        mvprintw(DIAGNOSTIC_ROWS+0, 2*DIAGNOSTIC_COLS-15, "compute:%5.1fms", (compute_avg - fio_avg) / THOUSAND);
-        mvprintw(DIAGNOSTIC_ROWS+1, 2*DIAGNOSTIC_COLS-15, "file io:%5.1fms", fio_avg / THOUSAND);
-        mvprintw(DIAGNOSTIC_ROWS+2, 2*DIAGNOSTIC_COLS-15, "draw:   %5.1fms", draw_avg / THOUSAND);
-        mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS-15, "refresh:%5.1fms/%d", refresh_avg / THOUSAND, DISPLAY_FLUSH_EPOCHS);
-        mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS+3, "(%dk%1dpx)   ", (int)n_dirty_pixels_avg/THOUSAND, ((int)n_dirty_pixels_avg % THOUSAND) / 100);
-        mvprintw(DIAGNOSTIC_ROWS+4, 2*DIAGNOSTIC_COLS-15, "wait:   %5.1fms", wait_avg / THOUSAND);
-        mvprintw(DIAGNOSTIC_ROWS+5, 2*DIAGNOSTIC_COLS-15, "sleep:  %5.1fms", sleep_avg / THOUSAND);
-        mvprintw(DIAGNOSTIC_ROWS+6, 2*DIAGNOSTIC_COLS-15, "[note: %d cores]", n_cores);
+        *wait_avg = 0.99*(*wait_avg) + 0.01*usec_time_elapsed(refreshed, handled);
+        *sleep_avg = 0.99*(*sleep_avg) + 0.01*usec_time_elapsed(handled, slept);
+        *total_avg = 0.99*(*total_avg) + 0.01*usec_time_elapsed(start, stop);
+        mvprintw(DIAGNOSTIC_ROWS+0, 2*DIAGNOSTIC_COLS-15, "compute:%5.1fms", (*compute_avg - *fio_avg) / THOUSAND);
+        mvprintw(DIAGNOSTIC_ROWS+1, 2*DIAGNOSTIC_COLS-15, "file io:%5.1fms", *fio_avg / THOUSAND);
+        mvprintw(DIAGNOSTIC_ROWS+2, 2*DIAGNOSTIC_COLS-15, "draw:   %5.1fms", *draw_avg / THOUSAND);
+        mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS-15, "refresh:%5.1fms/%d", *refresh_avg / THOUSAND, DISPLAY_FLUSH_EPOCHS);
+        mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS+3, "(%dk%1dpx)   ", (int)*n_dirty_pixels_avg/THOUSAND, ((int)*n_dirty_pixels_avg % THOUSAND) / 100);
+        mvprintw(DIAGNOSTIC_ROWS+4, 2*DIAGNOSTIC_COLS-15, "wait:   %5.1fms", *wait_avg / THOUSAND);
+        mvprintw(DIAGNOSTIC_ROWS+5, 2*DIAGNOSTIC_COLS-15, "sleep:  %5.1fms", *sleep_avg / THOUSAND);
+        mvprintw(DIAGNOSTIC_ROWS+6, 2*DIAGNOSTIC_COLS-15, "[note: %s cores]", "??");
         mvprintw(DIAGNOSTIC_ROWS+7, 2*DIAGNOSTIC_COLS-15, "epoch:%9d", epoch);
-        mvprintw(DIAGNOSTIC_ROWS+8, 2*DIAGNOSTIC_COLS-15, "Hz:  %7.1f/%d(/%d)  ", 1 / (total_avg / MILLION), DISPLAY_FLUSH_EPOCHS, WILDFIRE_SPEEDUP);
+        mvprintw(DIAGNOSTIC_ROWS+8, 2*DIAGNOSTIC_COLS-15, "Hz:  %7.1f/%d(/%d)  ", 1 / (*total_avg / MILLION), DISPLAY_FLUSH_EPOCHS, WILDFIRE_SPEEDUP);
         mvprintw(DIAGNOSTIC_ROWS+9, 2*DIAGNOSTIC_COLS-15, "usable:%5.1fms  ", USABLE_MSEC_PER_EPOCH);
-        mvprintw(DIAGNOSTIC_ROWS+10,2*DIAGNOSTIC_COLS-15, "used:  %5.1fms  ", usec_time_elapsed(&start, &refreshed) / THOUSAND);
+        mvprintw(DIAGNOSTIC_ROWS+10,2*DIAGNOSTIC_COLS-15, "used:  %5.1fms  ", usec_time_elapsed(start, refreshed) / THOUSAND);
         
         //#ifdef UMBRARY
         //if (umbrary_active) {
@@ -904,7 +915,9 @@ int c_run(
         start = stop;
     }
     
-    endwin();
-    
     return 0;
+}
+
+void c_exit() {
+    endwin();
 }

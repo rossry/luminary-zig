@@ -1,4 +1,10 @@
 #include "cellular.h"
+#include <sys/time.h>
+
+typedef struct timeval timeval_t;
+
+void c_init();
+void c_exit();
 
 int c_run(
     int epoch_limit,
@@ -35,5 +41,23 @@ int c_run(
     int waves_diag_next[],
     turing_vector_t turing_u[],
     turing_vector_t turing_v[],
-    int in_chr
+    int in_chr,
+    timeval_t* start,
+    timeval_t* computed,
+    timeval_t* drawn,
+    timeval_t* refreshed,
+    timeval_t* handled,
+    timeval_t* slept,
+    timeval_t* stop,
+    timeval_t* fio_start,
+    timeval_t* fio_stop,
+    int* n_dirty_pixels,
+    double* compute_avg,
+    double* fio_avg,
+    double* draw_avg,
+    double* refresh_avg,
+    double* wait_avg,
+    double* sleep_avg,
+    double* total_avg,
+    double* n_dirty_pixels_avg
 );

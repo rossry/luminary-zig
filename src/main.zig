@@ -13,8 +13,8 @@ const COLS: u16 = constants.COLS;
 const main_c = @cImport({
     // See https://github.com/ziglang/zig/issues/515
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
-    @cInclude("cellular.h");
     @cInclude("main.h");
+    @cInclude("cellular.h");
 });
 const cellular_c = @cImport({
     // See https://github.com/ziglang/zig/issues/515
@@ -225,7 +225,34 @@ pub fn main() !u8 {
             sacn_c.sacn_test_client_set_level(constants.CHANNEL_M_MODE, 200); // duped to sync seq no.
         }
     }
-
+    
+    // performance-monitoring variables
+    var start: main_c.timeval_t = init:{
+        var x:main_c.timeval_t = undefined;
+        _  = main_c.gettimeofday(&x, null);
+        break :init x;
+    };
+    var computed: main_c.timeval_t = undefined;
+    var drawn: main_c.timeval_t = undefined;
+    var refreshed: main_c.timeval_t = undefined;
+    var handled: main_c.timeval_t = undefined;
+    var slept: main_c.timeval_t = undefined;
+    var stop: main_c.timeval_t = undefined;
+    var fio_start: main_c.timeval_t = undefined;
+    var fio_stop: main_c.timeval_t = undefined;
+    var n_dirty_pixels: c_int = 0;
+    var compute_avg: f64 = 0;
+    var fio_avg: f64 = 0;
+    var draw_avg: f64 = 0;
+    var refresh_avg: f64 = 0;
+    var wait_avg: f64 = 0;
+    var sleep_avg: f64 = 0;
+    var total_avg: f64 = 0;
+    var n_dirty_pixels_avg: f64 = 0;
+    
+    main_c.c_init();
+    defer main_c.c_exit();
+    
     return @intCast(u8, main_c.c_run(
         @intCast(c_int, epoch_limit),
         @boolToInt(spectrary_active),
@@ -262,5 +289,23 @@ pub fn main() !u8 {
         @ptrCast([*c]main_c.turing_vector_t, &turing_u),
         @ptrCast([*c]main_c.turing_vector_t, &turing_v),
         in_chr,
+        &start,
+        &computed,
+        &drawn,
+        &refreshed,
+        &handled,
+        &slept,
+        &stop,
+        &fio_start,
+        &fio_stop,
+        &n_dirty_pixels,
+        &compute_avg,
+        &fio_avg,
+        &draw_avg,
+        &refresh_avg,
+        &wait_avg,
+        &sleep_avg,
+        &total_avg,
+        &n_dirty_pixels_avg,
     ));
 }
