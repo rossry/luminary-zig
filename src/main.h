@@ -6,11 +6,11 @@ typedef struct timeval timeval_t;
 void c_init();
 void c_exit();
 
-int c_run(
+void c_epoch(
     int epoch_limit,
     int spectrary_active,
     int umbrary_active,
-    int epoch,
+    int* epoch,
     int scene,
     int menu_context,
     int scratch[],
