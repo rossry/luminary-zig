@@ -256,12 +256,8 @@ pub fn main() !u8 {
     while (epoch <= epoch_limit or epoch_limit <= 0) {
         epoch += 1;
         
-        main_c.c_epoch(
-            @boolToInt(spectrary_active),
-            @boolToInt(umbrary_active),
+        main_c.c_compute_cyclic_evolution(
             epoch,
-            scene,
-            menu_context,
             &scratch,
             &control_directive_0,
             &control_directive_0_next,
@@ -271,7 +267,6 @@ pub fn main() !u8 {
             &control_orth_next,
             &control_diag,
             &control_diag_next,
-            &rainbow_tone,
             &rainbow_0,
             &rainbow_0_next,
             &impatience_0,
@@ -290,6 +285,71 @@ pub fn main() !u8 {
             &waves_diag_next,
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+        );
+        
+        main_c.c_compute_fio_step(
+            @boolToInt(spectrary_active),
+            @boolToInt(umbrary_active),
+            epoch,
+            &fio_start,
+            &fio_stop,
+        );
+        
+        main_c.c_compute_turing_evolution(
+            @boolToInt(spectrary_active),
+            @boolToInt(umbrary_active),
+            epoch,
+            &control_directive_0,
+            &rainbow_0,
+            &rainbow_0_next,
+            &pressure_self,
+            &waves_orth_next,
+            @ptrCast([*c]main_c.turing_vector_t, &turing_u),
+            @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+            &computed,
+        );
+        
+        main_c.c_draw_and_io(
+            @boolToInt(spectrary_active),
+            @boolToInt(umbrary_active),
+            epoch,
+            &control_directive_0,
+            &control_directive_0_next,
+            &control_directive_1,
+            &control_directive_1_next,
+            &control_orth,
+            &control_orth_next,
+            &control_diag,
+            &control_diag_next,
+            &rainbow_0,
+            &rainbow_0_next,
+            &rainbow_1,
+            &rainbow_1_next,
+            &pressure_orth,
+            &pressure_orth_next,
+            &pressure_diag,
+            &pressure_diag_next,
+            &waves_orth,
+            &waves_orth_next,
+            &waves_diag,
+            &waves_diag_next,
+            @ptrCast([*c]main_c.turing_vector_t, &turing_u),
+            @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+            &drawn,
+        );
+        
+        main_c.c_draw_ui(
+            @boolToInt(spectrary_active),
+            @boolToInt(umbrary_active),
+            epoch,
+            scene,
+            menu_context,
+            &control_directive_0,
+            &control_directive_1,
+            &control_orth,
+            &rainbow_tone,
+            &waves_orth,
+            &waves_orth_next,
             in_chr,
             &start,
             &computed,

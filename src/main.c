@@ -40,12 +40,8 @@ void c_init() {
     srand(5);
 }
 
-void c_epoch(
-    int spectrary_active,
-    int umbrary_active,
+void c_compute_cyclic_evolution(
     int epoch,
-    int scene,
-    int menu_context,
     int scratch[],
     int control_directive_0[],
     int control_directive_0_next[],
@@ -55,7 +51,6 @@ void c_epoch(
     int control_orth_next[],
     int control_diag[],
     int control_diag_next[],
-    int rainbow_tone[],
     int rainbow_0[],
     int rainbow_0_next[],
     int impatience_0[],
@@ -73,26 +68,7 @@ void c_epoch(
     int waves_diag[],
     int waves_diag_next[],
     turing_vector_t turing_u[],
-    turing_vector_t turing_v[],
-    int in_chr,
-    timeval_t* start,
-    timeval_t* computed,
-    timeval_t* drawn,
-    timeval_t* refreshed,
-    timeval_t* handled,
-    timeval_t* slept,
-    timeval_t* stop,
-    timeval_t* fio_start,
-    timeval_t* fio_stop,
-    int* n_dirty_pixels,
-    double* compute_avg,
-    double* fio_avg,
-    double* draw_avg,
-    double* refresh_avg,
-    double* wait_avg,
-    double* sleep_avg,
-    double* total_avg,
-    double* n_dirty_pixels_avg
+    turing_vector_t turing_v[]
 ) {
     // begin computing evolution
     for (int xy = 0; xy < ROWS * COLS; ++xy) {
@@ -247,8 +223,6 @@ void c_epoch(
         }
     }
     
-    compute_turing_all(turing_u, turing_v);
-    
     // drive waves_(orth|diag)'s top row
     /*
     waves_base_z_orig += WAVES_INCREMENT;
@@ -283,7 +257,15 @@ void c_epoch(
         }
     }
     */
-    
+}
+
+void c_compute_fio_step(
+    int spectrary_active,
+    int umbrary_active,
+    int epoch,
+    timeval_t* fio_start,
+    timeval_t* fio_stop
+) {
     gettimeofday(fio_start, NULL);
     
     #ifdef SPECTRARY
@@ -300,6 +282,22 @@ void c_epoch(
     #endif /* UMBRARY */
     
     gettimeofday(fio_stop, NULL);
+}
+
+void c_compute_turing_evolution(
+    int spectrary_active,
+    int umbrary_active,
+    int epoch,
+    int control_directive_0[],
+    int rainbow_0[],
+    int rainbow_0_next[],
+    int pressure_self[],
+    int waves_orth_next[],
+    turing_vector_t turing_u[],
+    turing_vector_t turing_v[],
+    timeval_t* computed
+) {
+    compute_turing_all(turing_u, turing_v);
     
     for (int xy = 0; xy < ROWS * COLS; ++xy) {
         #ifdef THROTTLE_LOOP
@@ -374,7 +372,36 @@ void c_epoch(
     // end computing evolution
     
     gettimeofday(computed, NULL);
-    
+}
+
+void c_draw_and_io(
+    int spectrary_active,
+    int umbrary_active,
+    int epoch,
+    int control_directive_0[],
+    int control_directive_0_next[],
+    int control_directive_1[],
+    int control_directive_1_next[],
+    int control_orth[],
+    int control_orth_next[],
+    int control_diag[],
+    int control_diag_next[],
+    int rainbow_0[],
+    int rainbow_0_next[],
+    int rainbow_1[],
+    int rainbow_1_next[],
+    int pressure_orth[],
+    int pressure_orth_next[],
+    int pressure_diag[],
+    int pressure_diag_next[],
+    int waves_orth[],
+    int waves_orth_next[],
+    int waves_diag[],
+    int waves_diag_next[],
+    turing_vector_t turing_u[],
+    turing_vector_t turing_v[],
+    timeval_t* drawn
+) {
     // begin draw/increment mutex
     for (int xy = 0; xy < ROWS * COLS; ++xy) {
         #ifdef THROTTLE_LOOP
@@ -544,7 +571,40 @@ void c_epoch(
     // end draw/increment mutex
     
     gettimeofday(drawn, NULL);
-    
+}
+
+void c_draw_ui(
+    int spectrary_active,
+    int umbrary_active,
+    int epoch,
+    int scene,
+    int menu_context,
+    int control_directive_0[],
+    int control_directive_1[],
+    int control_orth[],
+    int rainbow_tone[],
+    int waves_orth[],
+    int waves_orth_next[],
+    int in_chr,
+    timeval_t* start,
+    timeval_t* computed,
+    timeval_t* drawn,
+    timeval_t* refreshed,
+    timeval_t* handled,
+    timeval_t* slept,
+    timeval_t* stop,
+    timeval_t* fio_start,
+    timeval_t* fio_stop,
+    int* n_dirty_pixels,
+    double* compute_avg,
+    double* fio_avg,
+    double* draw_avg,
+    double* refresh_avg,
+    double* wait_avg,
+    double* sleep_avg,
+    double* total_avg,
+    double* n_dirty_pixels_avg
+) {
     // begin flush display
     if (epoch > INITIALIZATION_EPOCHS) {
         if ((epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
