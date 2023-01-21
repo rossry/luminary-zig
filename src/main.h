@@ -40,9 +40,7 @@ void c_compute_cyclic_evolution(
 void c_compute_fio_step(
     int spectrary_active,
     int umbrary_active,
-    int epoch,
-    timeval_t* fio_start,
-    timeval_t* fio_stop
+    int epoch
 );
 
 void c_compute_turing_evolution(
@@ -55,8 +53,7 @@ void c_compute_turing_evolution(
     int pressure_self[],
     int waves_orth_next[],
     turing_vector_t turing_u[],
-    turing_vector_t turing_v[],
-    timeval_t* computed
+    turing_vector_t turing_v[]
 );
 
 void c_draw_and_io(
@@ -84,8 +81,7 @@ void c_draw_and_io(
     int waves_diag[],
     int waves_diag_next[],
     turing_vector_t turing_u[],
-    turing_vector_t turing_v[],
-    timeval_t* drawn
+    turing_vector_t turing_v[]
 );
 
 void c_draw_ui(

@@ -262,12 +262,8 @@ void c_compute_cyclic_evolution(
 void c_compute_fio_step(
     int spectrary_active,
     int umbrary_active,
-    int epoch,
-    timeval_t* fio_start,
-    timeval_t* fio_stop
+    int epoch
 ) {
-    gettimeofday(fio_start, NULL);
-    
     #ifdef SPECTRARY
     if (spectrary_active) {
         spectrary_update();
@@ -280,8 +276,6 @@ void c_compute_fio_step(
         umbrary_update((epoch)*22222);
     }
     #endif /* UMBRARY */
-    
-    gettimeofday(fio_stop, NULL);
 }
 
 void c_compute_turing_evolution(
@@ -294,8 +288,7 @@ void c_compute_turing_evolution(
     int pressure_self[],
     int waves_orth_next[],
     turing_vector_t turing_u[],
-    turing_vector_t turing_v[],
-    timeval_t* computed
+    turing_vector_t turing_v[]
 ) {
     compute_turing_all(turing_u, turing_v);
     
@@ -370,8 +363,6 @@ void c_compute_turing_evolution(
         #endif /* UMBRARY */
     }
     // end computing evolution
-    
-    gettimeofday(computed, NULL);
 }
 
 void c_draw_and_io(
@@ -399,8 +390,7 @@ void c_draw_and_io(
     int waves_diag[],
     int waves_diag_next[],
     turing_vector_t turing_u[],
-    turing_vector_t turing_v[],
-    timeval_t* drawn
+    turing_vector_t turing_v[]
 ) {
     // begin draw/increment mutex
     for (int xy = 0; xy < ROWS * COLS; ++xy) {
@@ -569,8 +559,6 @@ void c_draw_and_io(
     }
     #endif /* SPECTRARY */
     // end draw/increment mutex
-    
-    gettimeofday(drawn, NULL);
 }
 
 void c_draw_ui(
@@ -967,8 +955,6 @@ void c_draw_ui(
         mvprintw(DIAGNOSTIC_ROWS+0, 50, "menu: ? (#%04d)", menu_context);
     }
     // end flush display
-    
-    *start = *stop;
 }
 
 void c_exit() {

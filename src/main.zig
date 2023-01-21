@@ -286,14 +286,16 @@ pub fn main() !u8 {
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
         );
+        
+        _ = main_c.gettimeofday(&fio_start, null);
 
         main_c.c_compute_fio_step(
             @boolToInt(spectrary_active),
             @boolToInt(umbrary_active),
             epoch,
-            &fio_start,
-            &fio_stop,
         );
+        
+        _ = main_c.gettimeofday(&fio_stop, null);
 
         main_c.c_compute_turing_evolution(
             @boolToInt(spectrary_active),
@@ -306,8 +308,9 @@ pub fn main() !u8 {
             &waves_orth_next,
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
-            &computed,
         );
+    
+        _ = main_c.gettimeofday(&computed, null);
 
         main_c.c_draw_and_io(
             @boolToInt(spectrary_active),
@@ -335,8 +338,9 @@ pub fn main() !u8 {
             &waves_diag_next,
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
-            &drawn,
         );
+    
+        _ = main_c.gettimeofday(&drawn, null);
 
         main_c.c_draw_ui(
             @boolToInt(spectrary_active),
@@ -371,6 +375,8 @@ pub fn main() !u8 {
             &n_dirty_pixels_avg,
         );
     }
+    
+    start = stop;
 
     return 0;
 }
