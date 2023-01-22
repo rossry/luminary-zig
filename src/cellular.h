@@ -75,16 +75,20 @@ void compute_decay(
 );
 
 void compute_turing_all(
-    turing_vector_t* u_reagents,
-    turing_vector_t* v_reagents
+    turing_vector_t* reagents
 );
 
 void apply_turing(
-    turing_vector_t* u_reagents,
-    turing_vector_t* v_reagents,
+    turing_vector_t* reagents,
     int xy,
     double annealing_factor,
     double custom_factor
+);
+
+void normalize_turing(
+    turing_vector_t* u_reagents,
+    turing_vector_t* v_reagents,
+    int xy
 );
 
 #endif /* CELLULAR_H */

@@ -73,6 +73,15 @@ void c_compute_turing_evolution_cell(
     turing_vector_t turing_v[]
 );
 
+void c_apply_umbrary_cell(
+    int xy,
+    int umbrary_active,
+    int epoch,
+    int rainbow_0_next[],
+    turing_vector_t turing_u[],
+    turing_vector_t turing_v[]
+);
+
 void c_draw_and_io(
     int spectrary_active,
     int umbrary_active,

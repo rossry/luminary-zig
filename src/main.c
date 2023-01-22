@@ -298,11 +298,6 @@ void c_compute_turing_evolution_cell(
     turing_vector_t turing_u[],
     turing_vector_t turing_v[]
 ) {
-    #ifdef THROTTLE_LOOP
-    if (xy % THROTTLE_LOOP_N == 0) {
-        usleep(THROTTLE_LOOP_USEC);
-    }
-    #endif /* THROTTLE_LOOP */
     int x = xy % COLS;
     int y = xy / COLS;
     
@@ -313,7 +308,9 @@ void c_compute_turing_evolution_cell(
     ) {
         pressure_self[xy] = PRESSURE_DELAY_EPOCHS;
     }
+    #endif /* NOT_FOR_GG */
     
+    #ifdef NOT_FOR_GG
     if (control_directive_0[xy] == PATTERN_FULL_RAINBOW
         || rainbow_0_next[xy] != rainbow_0[xy]
     ) {
@@ -331,39 +328,45 @@ void c_compute_turing_evolution_cell(
     }
     #endif /* NOT_FOR_GG */
     
-    apply_turing(
-        turing_u,
-        turing_v,
-        xy,
-        //1000.0 / max(1000,((epoch)%3000)),
-        1.0,
-        //(double)rainbow_0_next[xy] / 12.0
-        (double)((epoch)%1000)/(1000.0)
-    );
+    apply_turing(turing_u, xy, 1.0, (double)((epoch)%1000)/(1000.0));
+    apply_turing(turing_v, xy, 1.0, (double)((epoch)%1000)/(1000.0));
     
+    normalize_turing(turing_u, turing_v, xy);
+}
+
+void c_apply_umbrary_cell(
+    int xy,
+    int umbrary_active,
+    int epoch,
+    int rainbow_0_next[],
+    turing_vector_t turing_u[],
+    turing_vector_t turing_v[]
+) {
     #ifdef UMBRARY
-        if (
-            xy%COLS < UMBRARY_OUTPUT_COLS
-            && xy/COLS < UMBRARY_OUTPUT_ROWS
-        ) {
-            switch (umbrary_level[(xy/COLS)*UMBRARY_OUTPUT_COLS+(xy%COLS)]) {
-            case 1:
-                rainbow_0_next[xy] = (8+((epoch)/900))%COLORS;
-                rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((epoch)/300)%3-1);
-                break;
-            case -1:
-                rainbow_0_next[xy] = (2+((epoch)/900))%COLORS;
-                rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((epoch)/300)%3-1);
-                break;
-            //default:
-                // pass
+        if (umbrary_active) {
+            if (
+                xy%COLS < UMBRARY_OUTPUT_COLS
+                && xy/COLS < UMBRARY_OUTPUT_ROWS
+            ) {
+                switch (umbrary_level[(xy/COLS)*UMBRARY_OUTPUT_COLS+(xy%COLS)]) {
+                case 1:
+                    rainbow_0_next[xy] = (8+((epoch)/900))%COLORS;
+                    rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((epoch)/300)%3-1);
+                    break;
+                case -1:
+                    rainbow_0_next[xy] = (2+((epoch)/900))%COLORS;
+                    rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((epoch)/300)%3-1);
+                    break;
+                //default:
+                    // pass
+                }
+            } else {
+                display_color(
+                    xy,
+                    BLACK,
+                    BLACK
+                );
             }
-        } else {
-            display_color(
-                xy,
-                BLACK,
-                BLACK
-            );
         }
     #endif /* UMBRARY */
 }
@@ -811,6 +814,31 @@ void c_draw_ui(
     
     gettimeofday(slept, NULL);
     
+    gettimeofday(stop, NULL);
+    
+    // diagnostic printouts
+    *compute_avg = 0.99*(*compute_avg) + 0.01*usec_time_elapsed(start, computed);
+    *fio_avg = 0.99*(*fio_avg) + 0.01*usec_time_elapsed(fio_start, fio_stop);
+    *draw_avg = 0.99*(*draw_avg) + 0.01*usec_time_elapsed(computed, drawn);
+    if ((epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
+        *refresh_avg = 0.99*(*refresh_avg) + 0.01*usec_time_elapsed(drawn, refreshed);
+    }
+    *wait_avg = 0.99*(*wait_avg) + 0.01*usec_time_elapsed(refreshed, handled);
+    *sleep_avg = 0.99*(*sleep_avg) + 0.01*usec_time_elapsed(handled, slept);
+    *total_avg = 0.99*(*total_avg) + 0.01*usec_time_elapsed(start, stop);
+    mvprintw(DIAGNOSTIC_ROWS+0, 2*DIAGNOSTIC_COLS-15, "compute:%5.1fms", (*compute_avg - *fio_avg) / THOUSAND);
+    mvprintw(DIAGNOSTIC_ROWS+1, 2*DIAGNOSTIC_COLS-15, "file io:%5.1fms", *fio_avg / THOUSAND);
+    mvprintw(DIAGNOSTIC_ROWS+2, 2*DIAGNOSTIC_COLS-15, "draw:   %5.1fms", *draw_avg / THOUSAND);
+    mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS-15, "refresh:%5.1fms/%d", *refresh_avg / THOUSAND, DISPLAY_FLUSH_EPOCHS);
+    mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS+3, "(%dk%1dpx)   ", (int)*n_dirty_pixels_avg/THOUSAND, ((int)*n_dirty_pixels_avg % THOUSAND) / 100);
+    mvprintw(DIAGNOSTIC_ROWS+4, 2*DIAGNOSTIC_COLS-15, "wait:   %5.1fms", *wait_avg / THOUSAND);
+    mvprintw(DIAGNOSTIC_ROWS+5, 2*DIAGNOSTIC_COLS-15, "sleep:  %5.1fms", *sleep_avg / THOUSAND);
+    mvprintw(DIAGNOSTIC_ROWS+6, 2*DIAGNOSTIC_COLS-15, "[note: %s cores]", "??");
+    mvprintw(DIAGNOSTIC_ROWS+7, 2*DIAGNOSTIC_COLS-15, "epoch:%9d", epoch);
+    mvprintw(DIAGNOSTIC_ROWS+8, 2*DIAGNOSTIC_COLS-15, "Hz:  %7.1f/%d(/%d)  ", 1 / (*total_avg / MILLION), DISPLAY_FLUSH_EPOCHS, WILDFIRE_SPEEDUP);
+    mvprintw(DIAGNOSTIC_ROWS+9, 2*DIAGNOSTIC_COLS-15, "usable:%5.1fms  ", USABLE_MSEC_PER_EPOCH);
+    mvprintw(DIAGNOSTIC_ROWS+10,2*DIAGNOSTIC_COLS-15, "used:  %5.1fms  ", usec_time_elapsed(start, refreshed) / THOUSAND);
+    
     //#ifdef UMBRARY
     //if (umbrary_active) {
     //    mvprintw(DIAGNOSTIC_ROWS+11, 2*DIAGNOSTIC_COLS-15, "umbrary:%5.1fsec  ", umbrary_usec_elapsed() / MILLION);
@@ -913,31 +941,6 @@ void c_draw_ui(
     default:
         mvprintw(DIAGNOSTIC_ROWS+0, 50, "menu: ? (#%04d)", menu_context);
     }
-    
-    gettimeofday(stop, NULL);
-    
-    // diagnostic printouts
-    *compute_avg = 0.99*(*compute_avg) + 0.01*usec_time_elapsed(start, computed);
-    *fio_avg = 0.99*(*fio_avg) + 0.01*usec_time_elapsed(fio_start, fio_stop);
-    *draw_avg = 0.99*(*draw_avg) + 0.01*usec_time_elapsed(computed, drawn);
-    if ((epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
-        *refresh_avg = 0.99*(*refresh_avg) + 0.01*usec_time_elapsed(drawn, refreshed);
-    }
-    *wait_avg = 0.99*(*wait_avg) + 0.01*usec_time_elapsed(refreshed, handled);
-    *sleep_avg = 0.99*(*sleep_avg) + 0.01*usec_time_elapsed(handled, slept);
-    *total_avg = 0.99*(*total_avg) + 0.01*usec_time_elapsed(start, stop);
-    mvprintw(DIAGNOSTIC_ROWS+0, 2*DIAGNOSTIC_COLS-15, "compute:%5.1fms", (*compute_avg - *fio_avg) / THOUSAND);
-    mvprintw(DIAGNOSTIC_ROWS+1, 2*DIAGNOSTIC_COLS-15, "file io:%5.1fms", *fio_avg / THOUSAND);
-    mvprintw(DIAGNOSTIC_ROWS+2, 2*DIAGNOSTIC_COLS-15, "draw:   %5.1fms", *draw_avg / THOUSAND);
-    mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS-15, "refresh:%5.1fms/%d", *refresh_avg / THOUSAND, DISPLAY_FLUSH_EPOCHS);
-    mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS+3, "(%dk%1dpx)   ", (int)*n_dirty_pixels_avg/THOUSAND, ((int)*n_dirty_pixels_avg % THOUSAND) / 100);
-    mvprintw(DIAGNOSTIC_ROWS+4, 2*DIAGNOSTIC_COLS-15, "wait:   %5.1fms", *wait_avg / THOUSAND);
-    mvprintw(DIAGNOSTIC_ROWS+5, 2*DIAGNOSTIC_COLS-15, "sleep:  %5.1fms", *sleep_avg / THOUSAND);
-    mvprintw(DIAGNOSTIC_ROWS+6, 2*DIAGNOSTIC_COLS-15, "[note: %s cores]", "??");
-    mvprintw(DIAGNOSTIC_ROWS+7, 2*DIAGNOSTIC_COLS-15, "epoch:%9d", epoch);
-    mvprintw(DIAGNOSTIC_ROWS+8, 2*DIAGNOSTIC_COLS-15, "Hz:  %7.1f/%d(/%d)  ", 1 / (*total_avg / MILLION), DISPLAY_FLUSH_EPOCHS, WILDFIRE_SPEEDUP);
-    mvprintw(DIAGNOSTIC_ROWS+9, 2*DIAGNOSTIC_COLS-15, "usable:%5.1fms  ", USABLE_MSEC_PER_EPOCH);
-    mvprintw(DIAGNOSTIC_ROWS+10,2*DIAGNOSTIC_COLS-15, "used:  %5.1fms  ", usec_time_elapsed(start, refreshed) / THOUSAND);
     // end flush display
 }
 

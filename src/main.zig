@@ -209,7 +209,11 @@ pub fn main() !u8 {
     }
 
     // performance-monitoring variables
-    var start: main_c.timeval_t = undefined;
+    var start: main_c.timeval_t = init: {
+        var x: main_c.timeval_t = undefined;
+        _ = main_c.gettimeofday(&x, null);
+        break :init x;
+    };
     var computed: main_c.timeval_t = undefined;
     var drawn: main_c.timeval_t = undefined;
     var refreshed: main_c.timeval_t = undefined;
@@ -233,8 +237,6 @@ pub fn main() !u8 {
 
     // main loop
     while (epoch <= epoch_limit or epoch_limit <= 0) : (epoch += 1) {
-        _ = main_c.gettimeofday(&start, null);
-
         // begin computing evolution
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
@@ -304,8 +306,13 @@ pub fn main() !u8 {
 
         _ = main_c.gettimeofday(&fio_stop, null);
 
-        main_c.compute_turing_all(&turing_u, &turing_v);
+        main_c.compute_turing_all(&turing_u);
+        main_c.compute_turing_all(&turing_v);
         for (CELLS) |_, xy| {
+            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+            }
+
             main_c.c_compute_turing_evolution_cell(
                 @intCast(c_int, xy),
                 @boolToInt(spectrary_active),
@@ -319,6 +326,17 @@ pub fn main() !u8 {
                 @ptrCast([*c]main_c.turing_vector_t, &turing_u),
                 @ptrCast([*c]main_c.turing_vector_t, &turing_v),
             );
+
+            if (umbrary and umbrary_active) {
+                main_c.c_apply_umbrary_cell(
+                    @intCast(c_int, xy),
+                    @boolToInt(umbrary_active),
+                    epoch,
+                    &rainbow_0_[next],
+                    @ptrCast([*c]main_c.turing_vector_t, &turing_u),
+                    @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+                );
+            }
         }
         // end computing evolution
 
@@ -395,6 +413,8 @@ pub fn main() !u8 {
             &n_dirty_pixels_avg,
         );
     }
+
+    start = stop;
 
     return 0;
 }

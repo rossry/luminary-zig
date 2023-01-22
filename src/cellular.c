@@ -817,7 +817,7 @@ void diffuse_turing_reagents(turing_vector_t* vv) {
     diffuse_turing_reagent_vert(vv, 64, &vv[0].scale[4].inhib, &vv[0].scale[4].n_inhib);
 }
 
-void compute_turing_all(turing_vector_t* uu, turing_vector_t* vv) {
+void compute_turing_all_deprecated(turing_vector_t* uu, turing_vector_t* vv) {
     // initialize reagent arrays
     for (int xy=0; xy<ROWS*COLS; ++xy) {
         #ifdef THROTTLE_LOOP
@@ -833,6 +833,13 @@ void compute_turing_all(turing_vector_t* uu, turing_vector_t* vv) {
             uu[xy].scale[scl].n_inhib = 1;
             uu[xy].scale[scl].inhib = uu[xy].state;
         }
+    }
+    for (int xy=0; xy<ROWS*COLS; ++xy) {
+        #ifdef THROTTLE_LOOP
+        if (xy % THROTTLE_LOOP_N == 0) {
+            usleep(THROTTLE_LOOP_USEC);
+        }
+        #endif /* THROTTLE_LOOP */
         
         for (int scl=0; scl<vv[xy].n_scales; ++scl) {
             vv[xy].scale[scl].n_activ = 1;
@@ -845,11 +852,6 @@ void compute_turing_all(turing_vector_t* uu, turing_vector_t* vv) {
     
     // diffuse reagents -- N-pass box blur
     for (int ii=0; ii<TURING_DIFFUSION_PASSES; ++ii) {
-        #ifdef CAIRO_PAINT_BETWEEN_TURING_DIFFUSION_PASSES
-            if (ii) {
-                display_flush();
-            }
-        #endif /* CAIRO_PAINT_BETWEEN_TURING_DIFFUSION_PASSES */
         diffuse_turing_reagents(uu);
         diffuse_turing_reagents(vv);
     }
@@ -861,27 +863,61 @@ void compute_turing_all(turing_vector_t* uu, turing_vector_t* vv) {
             usleep(THROTTLE_LOOP_USEC);
         }
         #endif /* THROTTLE_LOOP */
+        
         for (int scl=0; scl<uu[xy].n_scales; ++scl) {
             uu[xy].scale[scl].activ /= uu[xy].scale[scl].n_activ;
             uu[xy].scale[scl].inhib /= uu[xy].scale[scl].n_inhib;
         }
-        //uu[xy].scale[2].activ = 0.0;
-        //uu[xy].scale[2].inhib = 0.0;
-        //uu[xy].scale[1].activ = 0.0;
-        //uu[xy].scale[1].inhib = 0.0;
-        //uu[xy].scale[0].activ = 0.0;
-        //uu[xy].scale[0].inhib = 0.9;
+    }
+    for (int xy=0; xy<ROWS*COLS; ++xy) {
+        #ifdef THROTTLE_LOOP
+        if (xy % THROTTLE_LOOP_N == 0) {
+            usleep(THROTTLE_LOOP_USEC);
+        }
+        #endif /* THROTTLE_LOOP */
         
         for (int scl=0; scl<vv[xy].n_scales; ++scl) {
             vv[xy].scale[scl].activ /= vv[xy].scale[scl].n_activ;
             vv[xy].scale[scl].inhib /= vv[xy].scale[scl].n_inhib;
         }
-        //vv[xy].scale[2].activ = 0.0;
-        //vv[xy].scale[2].inhib = 0.0;
-        //vv[xy].scale[1].activ = 0.0;
-        //vv[xy].scale[1].inhib = 0.0;
-        //vv[xy].scale[0].activ = 0.0;
-        //vv[xy].scale[0].inhib = 0.0;
+    }
+}
+
+void compute_turing_all(turing_vector_t* vv) {
+    // initialize reagent arrays
+    for (int xy=0; xy<ROWS*COLS; ++xy) {
+        #ifdef THROTTLE_LOOP
+        if (xy % THROTTLE_LOOP_N == 0) {
+            usleep(THROTTLE_LOOP_USEC);
+        }
+        #endif /* THROTTLE_LOOP */
+        
+        for (int scl=0; scl<vv[xy].n_scales; ++scl) {
+            vv[xy].scale[scl].n_activ = 1;
+            vv[xy].scale[scl].activ = vv[xy].state;
+            
+            vv[xy].scale[scl].n_inhib = 1;
+            vv[xy].scale[scl].inhib = vv[xy].state;
+        }
+    }
+    
+    // diffuse reagents -- N-pass box blur
+    for (int ii=0; ii<TURING_DIFFUSION_PASSES; ++ii) {
+        diffuse_turing_reagents(vv);
+    }
+    
+    // normalize reagents
+    for (int xy=0; xy<ROWS*COLS; ++xy) {
+        #ifdef THROTTLE_LOOP
+        if (xy % THROTTLE_LOOP_N == 0) {
+            usleep(THROTTLE_LOOP_USEC);
+        }
+        #endif /* THROTTLE_LOOP */
+        
+        for (int scl=0; scl<vv[xy].n_scales; ++scl) {
+            vv[xy].scale[scl].activ /= vv[xy].scale[scl].n_activ;
+            vv[xy].scale[scl].inhib /= vv[xy].scale[scl].n_inhib;
+        }
     }
 }
 
@@ -915,21 +951,12 @@ int turing_min_var(turing_vector_t* vec, double custom_factor) {
 }
 
 void apply_turing(
-    turing_vector_t* uu,
     turing_vector_t* vv,
     int xy,
     double annealing_factor,
     double custom_factor
 ) {
     int scl;
-    
-    scl = turing_min_var(&uu[xy], custom_factor);
-    if (uu[xy].scale[scl].activ > uu[xy].scale[scl].inhib) {
-        uu[xy].state += uu[xy].increment[scl] * annealing_factor;
-    } else {
-        uu[xy].state -= uu[xy].increment[scl] * annealing_factor;
-    }
-    uu[xy].debug = scl;
     
     scl = turing_min_var(&vv[xy], custom_factor);
     if (vv[xy].scale[scl].activ > vv[xy].scale[scl].inhib) {
@@ -938,7 +965,13 @@ void apply_turing(
         vv[xy].state -= vv[xy].increment[scl] * annealing_factor;
     }
     vv[xy].debug = scl;
-    
+}
+
+void normalize_turing(
+    turing_vector_t* uu,
+    turing_vector_t* vv,
+    int xy
+) {
     double r;
     r = sqrt(uu[xy].state*uu[xy].state + vv[xy].state*vv[xy].state);
     uu[xy].state /= r;
