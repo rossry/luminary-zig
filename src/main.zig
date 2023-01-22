@@ -300,11 +300,13 @@ pub fn main() !u8 {
 
         _ = main_c.gettimeofday(&fio_start, null);
 
-        main_c.c_compute_fio_step(
-            @boolToInt(spectrary_active),
-            @boolToInt(umbrary_active),
-            epoch,
-        );
+        if (SPECTRARY and spectrary_active) {
+            main_c.spectrary_update();
+        }
+
+        if (UMBRARY and umbrary_active) {
+            main_c.umbrary_update(epoch * 22_222);
+        }
 
         _ = main_c.gettimeofday(&fio_stop, null);
 
@@ -342,12 +344,12 @@ pub fn main() !u8 {
             );
         }
 
-        for (CELLS) |_, xy| {
-            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
-                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
-            }
+        if (UMBRARY and umbrary_active) {
+            for (CELLS) |_, xy| {
+                if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                    std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+                }
 
-            if (UMBRARY and umbrary_active) {
                 main_c.c_apply_umbrary_cell(
                     @intCast(c_int, xy),
                     @boolToInt(umbrary_active),

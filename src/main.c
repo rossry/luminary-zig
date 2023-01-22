@@ -266,25 +266,6 @@ void c_compute_global_pattern_driver(
     */
 }
 
-void c_compute_fio_step(
-    int spectrary_active,
-    int umbrary_active,
-    int epoch
-) {
-    #ifdef SPECTRARY
-    if (spectrary_active) {
-        spectrary_update();
-    }
-    #endif /* SPECTRARY */
-    
-    #ifdef UMBRARY
-    if (umbrary_active) {
-        //umbrary_update(0);
-        umbrary_update((epoch)*22222);
-    }
-    #endif /* UMBRARY */
-}
-
 void c_apply_other_rules_cell(
     int xy,
     int control_directive_0[],

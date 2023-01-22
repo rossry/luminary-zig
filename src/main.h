@@ -53,12 +53,6 @@ void c_compute_global_pattern_driver(
     int waves_diag_next[]
 );
 
-void c_compute_fio_step(
-    int spectrary_active,
-    int umbrary_active,
-    int epoch
-);
-
 void c_apply_other_rules_cell(
     int xy,
     int control_directive_0[],
