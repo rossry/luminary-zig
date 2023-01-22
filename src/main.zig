@@ -237,6 +237,8 @@ pub fn main() !u8 {
 
     // main loop
     while (epoch <= epoch_limit or epoch_limit <= 0) : (epoch += 1) {
+        _ = main_c.gettimeofday(&start, null);
+
         // begin computing evolution
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
@@ -306,33 +308,16 @@ pub fn main() !u8 {
 
         _ = main_c.gettimeofday(&fio_stop, null);
 
-        main_c.compute_turing_all(&turing_u);
-        for (CELLS) |_, xy| {
-            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
-                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
-            }
+        // TODO rework these into long-running worker loops coordinating via semaphore
+        var turing_worker_u: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_u });
 
-            main_c.apply_turing(
-                @ptrCast([*c]main_c.turing_vector_t, &turing_u),
-                @intCast(c_int, xy),
-                @as(f64, 1.0),
-                @intToFloat(f64, @mod(epoch, 1_000)) / (1_000.0),
-            );
-        }
+        var turing_worker_v: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_v });
 
-        main_c.compute_turing_all(&turing_v);
-        for (CELLS) |_, xy| {
-            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
-                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
-            }
+        turing_worker_u.join();
+        turing_worker_v.join();
 
-            main_c.apply_turing(
-                @ptrCast([*c]main_c.turing_vector_t, &turing_v),
-                @intCast(c_int, xy),
-                @as(f64, 1.0),
-                @intToFloat(f64, @mod(epoch, 1_000)) / (1_000.0),
-            );
-        }
+        // turing_computation_worker(epoch, &turing_u);
+        //turing_computation_worker(epoch, &turing_v);
 
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
@@ -454,7 +439,24 @@ pub fn main() !u8 {
         );
     }
 
-    start = stop;
-
     return 0;
+}
+
+fn turing_computation_worker(
+    epoch: *c_int,
+    turing_v: *[ROWS * COLS]main_c.turing_vector_t,
+) void {
+    main_c.compute_turing_all(@ptrCast([*c]main_c.turing_vector_t, turing_v));
+    for (CELLS) |_, xy| {
+        if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+            std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+        }
+
+        main_c.apply_turing(
+            @ptrCast([*c]main_c.turing_vector_t, turing_v),
+            @intCast(c_int, xy),
+            @as(f64, 1.0),
+            @intToFloat(f64, @mod(epoch.*, 1_000)) / (1_000.0),
+        );
+    }
 }
