@@ -240,6 +240,7 @@ pub fn main() !u8 {
         _ = main_c.gettimeofday(&start, null);
 
         // begin computing evolution
+        // TODO run this loop in n-way multithreaded parallel
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);

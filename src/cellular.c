@@ -585,8 +585,8 @@ int compute_cyclic(int* grid, int* impatience, int xy) {
         for(int ii = 0; ii < COLORS; ++ii){
             if (grid[xy] != ii) {
                 if (
-                    ( neighbors[ii] > 0.79 * n_neighbors && impatience[xy] > 5 )
-                    || ( neighbors[ii] > 0.62 * n_neighbors && impatience[xy] > 30 )
+                    ( neighbors[ii] > 0.89 * (double)n_neighbors && impatience[xy] > 5 )
+                    || ( neighbors[ii] > 0.76 * (double)n_neighbors && impatience[xy] > 30 )
                 ) {
                     return ii;
                 }
@@ -604,8 +604,7 @@ int compute_cyclic(int* grid, int* impatience, int xy) {
         }
         
         /* precipitate re-shuffle */
-        if (impatience[xy] > 100) {
-            impatience[xy] = 0;
+        if (impatience[xy] > 200) {
             return RAND_COLOR;
         }
     }
