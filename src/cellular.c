@@ -616,6 +616,7 @@ int compute_cyclic(int* grid, int* impatience, int xy) {
 // Euclidean-distance decay
 
 // hand-tuned to decay mostly like Euclidean distance
+// only writes to the _next arrays
 void compute_decay(
     int* orth, int* diag,
     int* orth_next, int* diag_next,

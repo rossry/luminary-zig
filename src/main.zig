@@ -249,36 +249,37 @@ pub fn main() !u8 {
             var y = xy / COLS;
 
             if (!constants.PETALS_ACTIVE or y < constants.PETAL_ROWS or x < constants.FLOOR_COLS) {
+                // thread-safe to run on cells in parallel (see notes in C definition)
                 main_c.c_compute_cyclic_evolution_cell(
                     @intCast(c_int, xy),
                     epoch,
                     &scratch,
-                    &control_directive_0_[now],
-                    &control_directive_0_[next],
-                    &control_directive_1_[now],
-                    &control_directive_1_[next],
-                    &control_orth_[now],
-                    &control_orth_[next],
-                    &control_diag_[now],
-                    &control_diag_[next],
-                    &rainbow_0_[now],
-                    &rainbow_0_[next],
-                    &impatience_0,
-                    &rainbow_1_[now],
-                    &rainbow_1_[next],
-                    &impatience_1,
-                    &pressure_self,
-                    &pressure_orth_[now],
-                    &pressure_orth_[next],
-                    &pressure_diag_[now],
-                    &pressure_diag_[next],
-                    &excitement,
-                    &waves_orth_[now],
-                    &waves_orth_[next],
-                    &waves_diag_[now],
-                    &waves_diag_[next],
-                    @ptrCast([*c]main_c.turing_vector_t, &turing_u),
-                    @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+                    &control_directive_0_[now], // read-only
+                    &control_directive_0_[next], // only accesses [xy]
+                    &control_directive_1_[now], // read-only
+                    &control_directive_1_[next], // only accesses [xy]
+                    &control_orth_[now], // read-only
+                    &control_orth_[next], // only accesses [xy]
+                    &control_diag_[now], // read-only
+                    &control_diag_[next], // only accesses [xy]
+                    &rainbow_0_[now], // read-only
+                    &rainbow_0_[next], // only accesses [xy]
+                    &impatience_0, // only accesses [xy]
+                    &rainbow_1_[now], // read-only
+                    &rainbow_1_[next], // only accesses [xy]
+                    &impatience_1, // only accesses [xy]
+                    &pressure_self, // read-only
+                    &pressure_orth_[now], // read-only
+                    &pressure_orth_[next], // only accesses [xy]
+                    &pressure_diag_[now], // read-only
+                    &pressure_diag_[next], // only accesses [xy]
+                    &excitement, // only accesses [xy]
+                    &waves_orth_[now], // read-only
+                    &waves_orth_[next], // only accesses [xy]
+                    &waves_diag_[now], // read-only
+                    &waves_diag_[next], // only accesses [xy]
+                    @ptrCast([*c]main_c.turing_vector_t, &turing_u), // only accesses [xy]
+                    @ptrCast([*c]main_c.turing_vector_t, &turing_v), // only accesses [xy]
                 );
             }
         }
