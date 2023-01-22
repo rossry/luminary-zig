@@ -811,31 +811,6 @@ void c_draw_ui(
     
     gettimeofday(slept, NULL);
     
-    gettimeofday(stop, NULL);
-    
-    // diagnostic printouts
-    *compute_avg = 0.99*(*compute_avg) + 0.01*usec_time_elapsed(start, computed);
-    *fio_avg = 0.99*(*fio_avg) + 0.01*usec_time_elapsed(fio_start, fio_stop);
-    *draw_avg = 0.99*(*draw_avg) + 0.01*usec_time_elapsed(computed, drawn);
-    if ((epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
-        *refresh_avg = 0.99*(*refresh_avg) + 0.01*usec_time_elapsed(drawn, refreshed);
-    }
-    *wait_avg = 0.99*(*wait_avg) + 0.01*usec_time_elapsed(refreshed, handled);
-    *sleep_avg = 0.99*(*sleep_avg) + 0.01*usec_time_elapsed(handled, slept);
-    *total_avg = 0.99*(*total_avg) + 0.01*usec_time_elapsed(start, stop);
-    mvprintw(DIAGNOSTIC_ROWS+0, 2*DIAGNOSTIC_COLS-15, "compute:%5.1fms", (*compute_avg - *fio_avg) / THOUSAND);
-    mvprintw(DIAGNOSTIC_ROWS+1, 2*DIAGNOSTIC_COLS-15, "file io:%5.1fms", *fio_avg / THOUSAND);
-    mvprintw(DIAGNOSTIC_ROWS+2, 2*DIAGNOSTIC_COLS-15, "draw:   %5.1fms", *draw_avg / THOUSAND);
-    mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS-15, "refresh:%5.1fms/%d", *refresh_avg / THOUSAND, DISPLAY_FLUSH_EPOCHS);
-    mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS+3, "(%dk%1dpx)   ", (int)*n_dirty_pixels_avg/THOUSAND, ((int)*n_dirty_pixels_avg % THOUSAND) / 100);
-    mvprintw(DIAGNOSTIC_ROWS+4, 2*DIAGNOSTIC_COLS-15, "wait:   %5.1fms", *wait_avg / THOUSAND);
-    mvprintw(DIAGNOSTIC_ROWS+5, 2*DIAGNOSTIC_COLS-15, "sleep:  %5.1fms", *sleep_avg / THOUSAND);
-    mvprintw(DIAGNOSTIC_ROWS+6, 2*DIAGNOSTIC_COLS-15, "[note: %s cores]", "??");
-    mvprintw(DIAGNOSTIC_ROWS+7, 2*DIAGNOSTIC_COLS-15, "epoch:%9d", epoch);
-    mvprintw(DIAGNOSTIC_ROWS+8, 2*DIAGNOSTIC_COLS-15, "Hz:  %7.1f/%d(/%d)  ", 1 / (*total_avg / MILLION), DISPLAY_FLUSH_EPOCHS, WILDFIRE_SPEEDUP);
-    mvprintw(DIAGNOSTIC_ROWS+9, 2*DIAGNOSTIC_COLS-15, "usable:%5.1fms  ", USABLE_MSEC_PER_EPOCH);
-    mvprintw(DIAGNOSTIC_ROWS+10,2*DIAGNOSTIC_COLS-15, "used:  %5.1fms  ", usec_time_elapsed(start, refreshed) / THOUSAND);
-    
     //#ifdef UMBRARY
     //if (umbrary_active) {
     //    mvprintw(DIAGNOSTIC_ROWS+11, 2*DIAGNOSTIC_COLS-15, "umbrary:%5.1fsec  ", umbrary_usec_elapsed() / MILLION);
@@ -938,6 +913,31 @@ void c_draw_ui(
     default:
         mvprintw(DIAGNOSTIC_ROWS+0, 50, "menu: ? (#%04d)", menu_context);
     }
+    
+    gettimeofday(stop, NULL);
+    
+    // diagnostic printouts
+    *compute_avg = 0.99*(*compute_avg) + 0.01*usec_time_elapsed(start, computed);
+    *fio_avg = 0.99*(*fio_avg) + 0.01*usec_time_elapsed(fio_start, fio_stop);
+    *draw_avg = 0.99*(*draw_avg) + 0.01*usec_time_elapsed(computed, drawn);
+    if ((epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
+        *refresh_avg = 0.99*(*refresh_avg) + 0.01*usec_time_elapsed(drawn, refreshed);
+    }
+    *wait_avg = 0.99*(*wait_avg) + 0.01*usec_time_elapsed(refreshed, handled);
+    *sleep_avg = 0.99*(*sleep_avg) + 0.01*usec_time_elapsed(handled, slept);
+    *total_avg = 0.99*(*total_avg) + 0.01*usec_time_elapsed(start, stop);
+    mvprintw(DIAGNOSTIC_ROWS+0, 2*DIAGNOSTIC_COLS-15, "compute:%5.1fms", (*compute_avg - *fio_avg) / THOUSAND);
+    mvprintw(DIAGNOSTIC_ROWS+1, 2*DIAGNOSTIC_COLS-15, "file io:%5.1fms", *fio_avg / THOUSAND);
+    mvprintw(DIAGNOSTIC_ROWS+2, 2*DIAGNOSTIC_COLS-15, "draw:   %5.1fms", *draw_avg / THOUSAND);
+    mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS-15, "refresh:%5.1fms/%d", *refresh_avg / THOUSAND, DISPLAY_FLUSH_EPOCHS);
+    mvprintw(DIAGNOSTIC_ROWS+3, 2*DIAGNOSTIC_COLS+3, "(%dk%1dpx)   ", (int)*n_dirty_pixels_avg/THOUSAND, ((int)*n_dirty_pixels_avg % THOUSAND) / 100);
+    mvprintw(DIAGNOSTIC_ROWS+4, 2*DIAGNOSTIC_COLS-15, "wait:   %5.1fms", *wait_avg / THOUSAND);
+    mvprintw(DIAGNOSTIC_ROWS+5, 2*DIAGNOSTIC_COLS-15, "sleep:  %5.1fms", *sleep_avg / THOUSAND);
+    mvprintw(DIAGNOSTIC_ROWS+6, 2*DIAGNOSTIC_COLS-15, "[note: %s cores]", "??");
+    mvprintw(DIAGNOSTIC_ROWS+7, 2*DIAGNOSTIC_COLS-15, "epoch:%9d", epoch);
+    mvprintw(DIAGNOSTIC_ROWS+8, 2*DIAGNOSTIC_COLS-15, "Hz:  %7.1f/%d(/%d)  ", 1 / (*total_avg / MILLION), DISPLAY_FLUSH_EPOCHS, WILDFIRE_SPEEDUP);
+    mvprintw(DIAGNOSTIC_ROWS+9, 2*DIAGNOSTIC_COLS-15, "usable:%5.1fms  ", USABLE_MSEC_PER_EPOCH);
+    mvprintw(DIAGNOSTIC_ROWS+10,2*DIAGNOSTIC_COLS-15, "used:  %5.1fms  ", usec_time_elapsed(start, refreshed) / THOUSAND);
     // end flush display
 }
 

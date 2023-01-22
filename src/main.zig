@@ -209,11 +209,7 @@ pub fn main() !u8 {
     }
 
     // performance-monitoring variables
-    var start: main_c.timeval_t = init: {
-        var x: main_c.timeval_t = undefined;
-        _ = main_c.gettimeofday(&x, null);
-        break :init x;
-    };
+    var start: main_c.timeval_t = undefined;
     var computed: main_c.timeval_t = undefined;
     var drawn: main_c.timeval_t = undefined;
     var refreshed: main_c.timeval_t = undefined;
@@ -237,6 +233,8 @@ pub fn main() !u8 {
 
     // main loop
     while (epoch <= epoch_limit or epoch_limit <= 0) : (epoch += 1) {
+        _ = main_c.gettimeofday(&start, null);
+
         // begin computing evolution
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
@@ -397,8 +395,6 @@ pub fn main() !u8 {
             &n_dirty_pixels_avg,
         );
     }
-
-    start = stop;
 
     return 0;
 }
