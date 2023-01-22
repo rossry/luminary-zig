@@ -176,7 +176,7 @@ pub fn main() !u8 {
         for (xs) |*x| {
             const MAX_TURING_SCALES: u16 = 5;
             x.* = main_c.turing_vector_t{
-                .state = 0.0, // TODO: rand_between(-0.5, 0.5) instead
+                .state = r.random().float(f64) * 2 - 1.0,
                 .n_scales = @intCast(c_int, 5),
                 .scale = undefined,
                 .increment = [MAX_TURING_SCALES]f64{
@@ -310,14 +310,9 @@ pub fn main() !u8 {
 
         // TODO rework these into long-running worker loops coordinating via semaphore
         var turing_worker_u: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_u });
-
         var turing_worker_v: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_v });
-
         turing_worker_u.join();
         turing_worker_v.join();
-
-        // turing_computation_worker(epoch, &turing_u);
-        //turing_computation_worker(epoch, &turing_v);
 
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
@@ -416,7 +411,7 @@ pub fn main() !u8 {
             &control_orth_[now],
             &rainbow_tone,
             &waves_orth_[now],
-            &waves_orth_[next], // huh? this seems misplaced
+            &waves_orth_[next], // huh? this seems unnecessary or misplaced
             in_chr,
             &start,
             &computed,
@@ -442,11 +437,14 @@ pub fn main() !u8 {
     return 0;
 }
 
+// TODO move worker-thread logic out to separate files
 fn turing_computation_worker(
     epoch: *c_int,
     turing_v: *[ROWS * COLS]main_c.turing_vector_t,
 ) void {
+    // TODO this can be broken across scales and parallelized further
     main_c.compute_turing_all(@ptrCast([*c]main_c.turing_vector_t, turing_v));
+
     for (CELLS) |_, xy| {
         if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
             std.time.sleep(constants.THROTTLE_LOOP_NSEC);
