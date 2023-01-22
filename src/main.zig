@@ -9,7 +9,7 @@ const UMBRARY: bool = constants.UMBRARY;
 
 const ROWS: u16 = constants.ROWS;
 const COLS: u16 = constants.COLS;
-const CELLS: u16 = constants.CELLS;
+const CELLS: [ROWS * COLS]void = constants.CELLS;
 
 const main_c = @cImport({
     // See https://github.com/ziglang/zig/issues/515
@@ -256,36 +256,40 @@ pub fn main() !u8 {
 
     // main loop
     while (epoch <= epoch_limit or epoch_limit <= 0) : (epoch += 1) {
-        main_c.c_compute_cyclic_evolution(
-            epoch,
-            &scratch,
-            &control_directive_0,
-            &control_directive_0_next,
-            &control_directive_1,
-            &control_directive_1_next,
-            &control_orth,
-            &control_orth_next,
-            &control_diag,
-            &control_diag_next,
-            &rainbow_0,
-            &rainbow_0_next,
-            &impatience_0,
-            &rainbow_1,
-            &rainbow_1_next,
-            &impatience_1,
-            &pressure_self,
-            &pressure_orth,
-            &pressure_orth_next,
-            &pressure_diag,
-            &pressure_diag_next,
-            &excitement,
-            &waves_orth,
-            &waves_orth_next,
-            &waves_diag,
-            &waves_diag_next,
-            @ptrCast([*c]main_c.turing_vector_t, &turing_u),
-            @ptrCast([*c]main_c.turing_vector_t, &turing_v),
-        );
+        // begin computing evolution
+        for (CELLS) |_, xy| {
+            main_c.c_compute_cyclic_evolution_cell(
+                @intCast(c_int, xy),
+                epoch,
+                &scratch,
+                &control_directive_0,
+                &control_directive_0_next,
+                &control_directive_1,
+                &control_directive_1_next,
+                &control_orth,
+                &control_orth_next,
+                &control_diag,
+                &control_diag_next,
+                &rainbow_0,
+                &rainbow_0_next,
+                &impatience_0,
+                &rainbow_1,
+                &rainbow_1_next,
+                &impatience_1,
+                &pressure_self,
+                &pressure_orth,
+                &pressure_orth_next,
+                &pressure_diag,
+                &pressure_diag_next,
+                &excitement,
+                &waves_orth,
+                &waves_orth_next,
+                &waves_diag,
+                &waves_diag_next,
+                @ptrCast([*c]main_c.turing_vector_t, &turing_u),
+                @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+            );
+        }
 
         main_c.c_compute_global_pattern_driver(
             epoch,
@@ -312,18 +316,23 @@ pub fn main() !u8 {
 
         _ = main_c.gettimeofday(&fio_stop, null);
 
-        main_c.c_compute_turing_evolution(
-            @boolToInt(spectrary_active),
-            @boolToInt(umbrary_active),
-            epoch,
-            &control_directive_0,
-            &rainbow_0,
-            &rainbow_0_next,
-            &pressure_self,
-            &waves_orth_next,
-            @ptrCast([*c]main_c.turing_vector_t, &turing_u),
-            @ptrCast([*c]main_c.turing_vector_t, &turing_v),
-        );
+        main_c.compute_turing_all(&turing_u, &turing_v);
+        for (CELLS) |_, xy| {
+            main_c.c_compute_turing_evolution_cell(
+                @intCast(c_int, xy),
+                @boolToInt(spectrary_active),
+                @boolToInt(umbrary_active),
+                epoch,
+                &control_directive_0,
+                &rainbow_0,
+                &rainbow_0_next,
+                &pressure_self,
+                &waves_orth_next,
+                @ptrCast([*c]main_c.turing_vector_t, &turing_u),
+                @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+            );
+        }
+        // end computing evolution
 
         _ = main_c.gettimeofday(&computed, null);
 

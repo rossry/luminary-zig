@@ -6,7 +6,8 @@ typedef struct timeval timeval_t;
 void c_init();
 void c_exit();
 
-void c_compute_cyclic_evolution(
+void c_compute_cyclic_evolution_cell(
+    int xy,
     int epoch,
     int scratch[],
     int control_directive_0[],
@@ -58,7 +59,8 @@ void c_compute_fio_step(
     int epoch
 );
 
-void c_compute_turing_evolution(
+void c_compute_turing_evolution_cell(
+    int xy,
     int spectrary_active,
     int umbrary_active,
     int epoch,
