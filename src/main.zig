@@ -313,6 +313,16 @@ pub fn main() !u8 {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
             }
 
+            main_c.c_apply_other_rules_cell(
+                @intCast(c_int, xy),
+                &control_directive_0_[now],
+                &rainbow_tone,
+                &rainbow_0_[now],
+                &rainbow_0_[next],
+                &pressure_self,
+                &waves_orth_[next],
+            );
+
             main_c.c_compute_turing_evolution_cell(
                 @intCast(c_int, xy),
                 @boolToInt(spectrary_active),
@@ -327,7 +337,7 @@ pub fn main() !u8 {
                 @ptrCast([*c]main_c.turing_vector_t, &turing_v),
             );
 
-            if (umbrary and umbrary_active) {
+            if (UMBRARY and umbrary_active) {
                 main_c.c_apply_umbrary_cell(
                     @intCast(c_int, xy),
                     @boolToInt(umbrary_active),

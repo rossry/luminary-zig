@@ -285,18 +285,14 @@ void c_compute_fio_step(
     #endif /* UMBRARY */
 }
 
-void c_compute_turing_evolution_cell(
+void c_apply_other_rules_cell(
     int xy,
-    int spectrary_active,
-    int umbrary_active,
-    int epoch,
     int control_directive_0[],
+    int rainbow_tone[],
     int rainbow_0[],
     int rainbow_0_next[],
     int pressure_self[],
-    int waves_orth_next[],
-    turing_vector_t turing_u[],
-    turing_vector_t turing_v[]
+    int waves_orth_next[]
 ) {
     int x = xy % COLS;
     int y = xy / COLS;
@@ -327,7 +323,21 @@ void c_compute_turing_evolution_cell(
         }
     }
     #endif /* NOT_FOR_GG */
-    
+}
+
+void c_compute_turing_evolution_cell(
+    int xy,
+    int spectrary_active,
+    int umbrary_active,
+    int epoch,
+    int control_directive_0[],
+    int rainbow_0[],
+    int rainbow_0_next[],
+    int pressure_self[],
+    int waves_orth_next[],
+    turing_vector_t turing_u[],
+    turing_vector_t turing_v[]
+) {
     apply_turing(turing_u, xy, 1.0, (double)((epoch)%1000)/(1000.0));
     apply_turing(turing_v, xy, 1.0, (double)((epoch)%1000)/(1000.0));
     
@@ -343,30 +353,28 @@ void c_apply_umbrary_cell(
     turing_vector_t turing_v[]
 ) {
     #ifdef UMBRARY
-        if (umbrary_active) {
-            if (
-                xy%COLS < UMBRARY_OUTPUT_COLS
-                && xy/COLS < UMBRARY_OUTPUT_ROWS
-            ) {
-                switch (umbrary_level[(xy/COLS)*UMBRARY_OUTPUT_COLS+(xy%COLS)]) {
-                case 1:
-                    rainbow_0_next[xy] = (8+((epoch)/900))%COLORS;
-                    rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((epoch)/300)%3-1);
-                    break;
-                case -1:
-                    rainbow_0_next[xy] = (2+((epoch)/900))%COLORS;
-                    rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((epoch)/300)%3-1);
-                    break;
-                //default:
-                    // pass
-                }
-            } else {
-                display_color(
-                    xy,
-                    BLACK,
-                    BLACK
-                );
+        if (
+            xy%COLS < UMBRARY_OUTPUT_COLS
+            && xy/COLS < UMBRARY_OUTPUT_ROWS
+        ) {
+            switch (umbrary_level[(xy/COLS)*UMBRARY_OUTPUT_COLS+(xy%COLS)]) {
+            case 1:
+                rainbow_0_next[xy] = (8+((epoch)/900))%COLORS;
+                rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((epoch)/300)%3-1);
+                break;
+            case -1:
+                rainbow_0_next[xy] = (2+((epoch)/900))%COLORS;
+                rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, ((epoch)/300)%3-1);
+                break;
+            //default:
+                // pass
             }
+        } else {
+            display_color(
+                xy,
+                BLACK,
+                BLACK
+            );
         }
     #endif /* UMBRARY */
 }

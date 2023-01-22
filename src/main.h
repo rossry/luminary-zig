@@ -59,6 +59,16 @@ void c_compute_fio_step(
     int epoch
 );
 
+void c_apply_other_rules_cell(
+    int xy,
+    int control_directive_0[],
+    int rainbow_tone[],
+    int rainbow_0[],
+    int rainbow_0_next[],
+    int pressure_self[],
+    int waves_orth_next[]
+);
+
 void c_compute_turing_evolution_cell(
     int xy,
     int spectrary_active,
