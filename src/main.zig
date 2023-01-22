@@ -9,6 +9,7 @@ const UMBRARY: bool = constants.UMBRARY;
 
 const ROWS: u16 = constants.ROWS;
 const COLS: u16 = constants.COLS;
+const CELLS: u16 = constants.CELLS;
 
 const main_c = @cImport({
     // See https://github.com/ziglang/zig/issues/515
@@ -254,9 +255,7 @@ pub fn main() !u8 {
     defer main_c.c_exit();
 
     // main loop
-    while (epoch <= epoch_limit or epoch_limit <= 0) {
-        epoch += 1;
-
+    while (epoch <= epoch_limit or epoch_limit <= 0) : (epoch += 1) {
         main_c.c_compute_cyclic_evolution(
             epoch,
             &scratch,

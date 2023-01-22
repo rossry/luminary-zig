@@ -33,6 +33,7 @@ pub const PETAL_ROWS_SEPARATED: u16 = (PETAL_ROWS - PETAL_ROWS_CONNECTED);
 
 pub const COLS: u16 = if (PETALS_ACTIVE) 5 * PETAL_COLS else FLOOR_COLS;
 pub const ROWS: u16 = (FLOOR_ROWS + PETAL_ROWS);
+pub const CELLS: [ROWS * COLS]void = undefined;
 
 pub inline fn PETAL_OF(xy: u16) u16 {
     if (PETALS_ACTIVE) {
