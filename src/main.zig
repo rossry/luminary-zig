@@ -17,11 +17,6 @@ const main_c = @cImport({
     @cInclude("main.h");
     @cInclude("cellular.h");
 });
-const cellular_c = @cImport({
-    // See https://github.com/ziglang/zig/issues/515
-    @cDefine("_NO_CRT_STDIO_INLINE", "1");
-    @cInclude("cellular.h");
-});
 const display_c = @cImport({
     // See https://github.com/ziglang/zig/issues/515
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
@@ -107,55 +102,43 @@ pub fn main() !u8 {
 
     var menu_context: c_int = constants.MENU_ACTIONS;
 
+    var now: u8 = 0;
+    var next: u8 = 1;
+    var next_next: u8 = undefined;
+
     var scratch = [_]c_int{0} ** (ROWS * COLS);
 
-    var control_directive_0 = [_]c_int{0} ** (ROWS * COLS);
-    var control_directive_0_next = [_]c_int{0} ** (ROWS * COLS);
-    var control_directive_1 = [_]c_int{0} ** (ROWS * COLS);
-    var control_directive_1_next = [_]c_int{0} ** (ROWS * COLS);
-    var control_orth = [_]c_int{0} ** (ROWS * COLS);
-    var control_orth_next = [_]c_int{0} ** (ROWS * COLS);
-    var control_diag = [_]c_int{0} ** (ROWS * COLS);
-    var control_diag_next = [_]c_int{0} ** (ROWS * COLS);
+    var control_directive_0_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
+    var control_directive_1_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
+    var control_orth_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
+    var control_diag_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
 
     var rainbow_tone = [_]c_int{0} ** (ROWS * COLS);
 
-    var rainbow_0 = init: {
-        var xs: [ROWS * COLS]c_int = undefined;
-        for (xs) |*x| {
-            x.* = constants.RAND_COLOR(r.random());
+    var rainbow_0_ = init: {
+        var xss: [2][ROWS * COLS]c_int = undefined;
+        for ([_]usize{ 0, 1 }) |w| {
+            for (xss[w]) |*x| {
+                x.* = constants.RAND_COLOR(r.random());
+            }
         }
-        break :init xs;
-    };
-    var rainbow_0_next = init: {
-        var xs: [ROWS * COLS]c_int = undefined;
-        for (xs) |*x| {
-            x.* = constants.RAND_COLOR(r.random());
-        }
-        break :init xs;
+        break :init xss;
     };
     var impatience_0 = [_]c_int{0} ** (ROWS * COLS);
-    var rainbow_1 = init: {
-        var xs: [ROWS * COLS]c_int = undefined;
-        for (xs) |*x| {
-            x.* = constants.RAND_COLOR(r.random());
+    var rainbow_1_ = init: {
+        var xss: [2][ROWS * COLS]c_int = undefined;
+        for ([_]usize{ 0, 1 }) |w| {
+            for (xss[w]) |*x| {
+                x.* = constants.RAND_COLOR(r.random());
+            }
         }
-        break :init xs;
-    };
-    var rainbow_1_next = init: {
-        var xs: [ROWS * COLS]c_int = undefined;
-        for (xs) |*x| {
-            x.* = constants.RAND_COLOR(r.random());
-        }
-        break :init xs;
+        break :init xss;
     };
     var impatience_1 = [_]c_int{0} ** (ROWS * COLS);
 
     var pressure_self = [_]c_int{0} ** (ROWS * COLS);
-    var pressure_orth = [_]c_int{0} ** (ROWS * COLS);
-    var pressure_orth_next = [_]c_int{0} ** (ROWS * COLS);
-    var pressure_diag = [_]c_int{0} ** (ROWS * COLS);
-    var pressure_diag_next = [_]c_int{0} ** (ROWS * COLS);
+    var pressure_orth_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
+    var pressure_diag_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
 
     var excitement = [_]f64{0.0} ** (ROWS * COLS);
 
@@ -164,10 +147,8 @@ pub fn main() !u8 {
     //int waves_base[] = WAVES_BASE_ARRAY;
     //int waves_base_z_orig = 16;
 
-    var waves_orth = [_]c_int{0} ** (ROWS * COLS);
-    var waves_orth_next = [_]c_int{0} ** (ROWS * COLS);
-    var waves_diag = [_]c_int{0} ** (ROWS * COLS);
-    var waves_diag_next = [_]c_int{0} ** (ROWS * COLS);
+    var waves_orth_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
+    var waves_diag_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
 
     var turing_u = init: {
         var xs: [ROWS * COLS]main_c.turing_vector_t = undefined;
@@ -258,52 +239,61 @@ pub fn main() !u8 {
     while (epoch <= epoch_limit or epoch_limit <= 0) : (epoch += 1) {
         // begin computing evolution
         for (CELLS) |_, xy| {
-            main_c.c_compute_cyclic_evolution_cell(
-                @intCast(c_int, xy),
-                epoch,
-                &scratch,
-                &control_directive_0,
-                &control_directive_0_next,
-                &control_directive_1,
-                &control_directive_1_next,
-                &control_orth,
-                &control_orth_next,
-                &control_diag,
-                &control_diag_next,
-                &rainbow_0,
-                &rainbow_0_next,
-                &impatience_0,
-                &rainbow_1,
-                &rainbow_1_next,
-                &impatience_1,
-                &pressure_self,
-                &pressure_orth,
-                &pressure_orth_next,
-                &pressure_diag,
-                &pressure_diag_next,
-                &excitement,
-                &waves_orth,
-                &waves_orth_next,
-                &waves_diag,
-                &waves_diag_next,
-                @ptrCast([*c]main_c.turing_vector_t, &turing_u),
-                @ptrCast([*c]main_c.turing_vector_t, &turing_v),
-            );
+            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+            }
+
+            var x = xy % COLS;
+            var y = xy / COLS;
+
+            if (!constants.PETALS_ACTIVE or y < constants.PETAL_ROWS or x < constants.FLOOR_COLS) {
+                main_c.c_compute_cyclic_evolution_cell(
+                    @intCast(c_int, xy),
+                    epoch,
+                    &scratch,
+                    &control_directive_0_[now],
+                    &control_directive_0_[next],
+                    &control_directive_1_[now],
+                    &control_directive_1_[next],
+                    &control_orth_[now],
+                    &control_orth_[next],
+                    &control_diag_[now],
+                    &control_diag_[next],
+                    &rainbow_0_[now],
+                    &rainbow_0_[next],
+                    &impatience_0,
+                    &rainbow_1_[now],
+                    &rainbow_1_[next],
+                    &impatience_1,
+                    &pressure_self,
+                    &pressure_orth_[now],
+                    &pressure_orth_[next],
+                    &pressure_diag_[now],
+                    &pressure_diag_[next],
+                    &excitement,
+                    &waves_orth_[now],
+                    &waves_orth_[next],
+                    &waves_diag_[now],
+                    &waves_diag_[next],
+                    @ptrCast([*c]main_c.turing_vector_t, &turing_u),
+                    @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+                );
+            }
         }
 
         main_c.c_compute_global_pattern_driver(
             epoch,
             scene,
-            &control_directive_0,
-            &control_directive_0_next,
-            &control_directive_1,
-            &control_directive_1_next,
-            &control_orth,
-            &control_orth_next,
-            &waves_orth,
-            &waves_orth_next,
-            &waves_diag,
-            &waves_diag_next,
+            &control_directive_0_[now],
+            &control_directive_0_[next],
+            &control_directive_1_[now],
+            &control_directive_1_[next],
+            &control_orth_[now],
+            &control_orth_[next],
+            &waves_orth_[now],
+            &waves_orth_[next],
+            &waves_diag_[now],
+            &waves_diag_[next],
         );
 
         _ = main_c.gettimeofday(&fio_start, null);
@@ -323,11 +313,11 @@ pub fn main() !u8 {
                 @boolToInt(spectrary_active),
                 @boolToInt(umbrary_active),
                 epoch,
-                &control_directive_0,
-                &rainbow_0,
-                &rainbow_0_next,
+                &control_directive_0_[now],
+                &rainbow_0_[now],
+                &rainbow_0_[next],
                 &pressure_self,
-                &waves_orth_next,
+                &waves_orth_[next],
                 @ptrCast([*c]main_c.turing_vector_t, &turing_u),
                 @ptrCast([*c]main_c.turing_vector_t, &turing_v),
             );
@@ -336,33 +326,41 @@ pub fn main() !u8 {
 
         _ = main_c.gettimeofday(&computed, null);
 
+        // begin draw/increment mutex
         main_c.c_draw_and_io(
             @boolToInt(spectrary_active),
             @boolToInt(umbrary_active),
             epoch,
-            &control_directive_0,
-            &control_directive_0_next,
-            &control_directive_1,
-            &control_directive_1_next,
-            &control_orth,
-            &control_orth_next,
-            &control_diag,
-            &control_diag_next,
-            &rainbow_0,
-            &rainbow_0_next,
-            &rainbow_1,
-            &rainbow_1_next,
-            &pressure_orth,
-            &pressure_orth_next,
-            &pressure_diag,
-            &pressure_diag_next,
-            &waves_orth,
-            &waves_orth_next,
-            &waves_diag,
-            &waves_diag_next,
+            &control_directive_0_[now],
+            &control_directive_0_[next],
+            &control_directive_1_[now],
+            &control_directive_1_[next],
+            &control_orth_[now],
+            &control_orth_[next],
+            &control_diag_[now],
+            &control_diag_[next],
+            &rainbow_0_[now],
+            &rainbow_0_[next],
+            &rainbow_1_[now],
+            &rainbow_1_[next],
+            &pressure_orth_[now],
+            &pressure_orth_[next],
+            &pressure_diag_[now],
+            &pressure_diag_[next],
+            &waves_orth_[now],
+            &waves_orth_[next],
+            &waves_diag_[now],
+            &waves_diag_[next],
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
         );
+
+        // flip double-buffering indices
+        next_next = now;
+        now = next;
+        next = next_next;
+        next_next = undefined;
+        // end draw/increment mutex
 
         _ = main_c.gettimeofday(&drawn, null);
 
@@ -372,12 +370,12 @@ pub fn main() !u8 {
             epoch,
             scene,
             menu_context,
-            &control_directive_0,
-            &control_directive_1,
-            &control_orth,
+            &control_directive_0_[now],
+            &control_directive_1_[now],
+            &control_orth_[now],
             &rainbow_tone,
-            &waves_orth,
-            &waves_orth_next,
+            &waves_orth_[now],
+            &waves_orth_[next], // huh? this seems misplaced
             in_chr,
             &start,
             &computed,

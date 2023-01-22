@@ -108,6 +108,7 @@ pub const DISPLAY_FLUSH_EPOCHS: u16 = 1; // flush display every # epochs
 pub const THROTTLE_LOOP: bool = false;
 pub const THROTTLE_LOOP_N: u16 = if (THROTTLE_LOOP) 100 else undefined;
 pub const THROTTLE_LOOP_USEC: u16 = if (THROTTLE_LOOP) 350 else undefined;
+pub const THROTTLE_LOOP_NSEC: u24 = if (THROTTLE_LOOP) THROTTLE_LOOP_USEC * 1_000 else undefined;
 
 pub const TRANSITION_TICKS: u16 = 400;
 pub const SECONDARY_TRANSITION_TICKS: u16 = 300;

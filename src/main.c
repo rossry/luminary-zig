@@ -71,153 +71,147 @@ void c_compute_cyclic_evolution_cell(
     turing_vector_t turing_u[],
     turing_vector_t turing_v[]
 ) {
-    #ifdef THROTTLE_LOOP
-    if (xy % THROTTLE_LOOP_N == 0) {
-        usleep(THROTTLE_LOOP_USEC);
-    }
-    #endif /* THROTTLE_LOOP */
     int x = xy % COLS;
     int y = xy / COLS;
-    if (y < PETAL_ROWS || x < FLOOR_COLS) {
-        compute_decay(
-            control_orth, control_diag,
-            control_orth_next, control_diag_next,
-            control_directive_0, control_directive_1,
-            control_directive_0_next, control_directive_1_next,
-            xy
-        );
-        
-        // revert to control_directive_1
-        if (control_orth_next[xy] < HIBERNATION_TICKS
-            && control_orth_next[xy] < control_orth[xy]
-            && control_directive_0_next[xy] != control_directive_1_next[xy]
-            && (RAND_SECONDARY_TRANSITION || control_directive_0_next[xy] > AGGRESSIVE_REVERSION)
+    
+    compute_decay(
+        control_orth, control_diag,
+        control_orth_next, control_diag_next,
+        control_directive_0, control_directive_1,
+        control_directive_0_next, control_directive_1_next,
+        xy
+    );
+    
+    // revert to control_directive_1
+    if (control_orth_next[xy] < HIBERNATION_TICKS
+        && control_orth_next[xy] < control_orth[xy]
+        && control_directive_0_next[xy] != control_directive_1_next[xy]
+        && (RAND_SECONDARY_TRANSITION || control_directive_0_next[xy] > AGGRESSIVE_REVERSION)
+    ) {
+        control_directive_0_next[xy] = control_directive_1_next[xy];
+        control_orth_next[xy] += SECONDARY_TRANSITION_TICKS;
+    }
+    
+    if (
+        #ifdef SACN_SERVER
+            !SACN_CONTROL(sacn_channels)
+        #else /* SACN_SERVER */
+            1
+        #endif /* SACN_SERVER */
+    ) {
+        // revert to hibernation
+        if (control_orth_next[xy] == 0
+            && control_directive_0_next[xy] != PATTERN_BASE
+            && RAND_SECONDARY_TRANSITION
         ) {
-            control_directive_0_next[xy] = control_directive_1_next[xy];
-            control_orth_next[xy] += SECONDARY_TRANSITION_TICKS;
+            control_directive_0_next[xy] = control_directive_1_next[xy] = PATTERN_BASE;
+            control_orth_next[xy] = SECONDARY_TRANSITION_TICKS;
+        }
+    }
+    
+    // evolve waves_(orth|diag)
+    compute_decay(
+        waves_orth, waves_diag,
+        waves_orth_next, waves_diag_next,
+        scratch, scratch, scratch, scratch,
+        xy
+    );
+    
+    if ((epoch) % WILDFIRE_SPEEDUP == 0) {
+        // evolve rainbow_0
+        // handled below, with separate timing logic
+        //rainbow_0_next[xy] = compute_cyclic(rainbow_0, impatience_0, xy);
+        
+        // evolve rainbow_1
+        if (pressure_orth[xy] > 17) {
+            rainbow_1_next[xy] = -1;
+        } else {
+            rainbow_1_next[xy] = compute_cyclic(rainbow_1, impatience_1, xy);
         }
         
-        if (
-            #ifdef SACN_SERVER
-                !SACN_CONTROL(sacn_channels)
-            #else /* SACN_SERVER */
-                1
-            #endif /* SACN_SERVER */
-        ) {
-            // revert to hibernation
-            if (control_orth_next[xy] == 0
-                && control_directive_0_next[xy] != PATTERN_BASE
-                && RAND_SECONDARY_TRANSITION
-            ) {
-                control_directive_0_next[xy] = control_directive_1_next[xy] = PATTERN_BASE;
-                control_orth_next[xy] = SECONDARY_TRANSITION_TICKS;
-            }
-        }
-        
-        // evolve waves_(orth|diag)
+        // evolve pressure_(orth|diag)
         compute_decay(
-            waves_orth, waves_diag,
-            waves_orth_next, waves_diag_next,
+            pressure_orth, pressure_diag,
+            pressure_orth_next, pressure_diag_next,
             scratch, scratch, scratch, scratch,
             xy
         );
         
-        if ((epoch) % WILDFIRE_SPEEDUP == 0) {
-            // evolve rainbow_0
-            // handled below, with separate timing logic
-            //rainbow_0_next[xy] = compute_cyclic(rainbow_0, impatience_0, xy);
-            
-            // evolve rainbow_1
-            if (pressure_orth[xy] > 17) {
-                rainbow_1_next[xy] = -1;
+        if (pressure_self[xy] > 0) {
+            pressure_self[xy] -= 1;
+            pressure_orth_next[xy] = pressure_diag_next[xy] = PRESSURE_RADIUS_TICKS;
+        }
+    }
+    
+    excitement[xy] += 1.0 / 3.0;
+    excitement[xy] += pressure_orth[xy] * 2 / 3 / PRESSURE_RADIUS_TICKS;
+    
+    if (
+        1
+        && (epoch) % WILDFIRE_SPEEDUP == 0
+        #ifdef UMBRARY
+            && !umbrary_active
+        #endif /* UMBRARY */
+        && ( excitement[xy] > 1.0
+             || ((waves_orth_next[xy] / 17) % 800) > 800 - 1 - 6
+           )
+    ) {
+        // evolve rainbow_0
+        rainbow_0_next[xy] = compute_cyclic(rainbow_0, impatience_0, xy);
+        
+        // maybe sync (turing_u, turing_v) from rainbow_0
+        if (
+            rainbow_0_next[xy] != rainbow_0[xy]
+            && rainbow_0_next[xy] != color_of_turing(xy, turing_u, turing_v)
+        ) {
+            if (1) {
+                rainbow_add_to_turing(xy, rainbow_0_next, turing_u, turing_v);
+                if ((rainbow_0_next[xy] - rainbow_0[xy] + COLORS)%COLORS == 2) {
+                    rainbow_add_to_turing(xy, rainbow_0_next, turing_u, turing_v);
+                }
+            } else if (
+                (1 + rainbow_0_next[xy] - color_of_turing(xy, turing_u, turing_v) + COLORS)%COLORS
+                <= 3
+            ) {
+                /* CR rrheingans-yoo: if you just incremented, then set
+                   to substate 0 (but display substate -1 for one round
+                   only). if you just randomized, then set to substate
+                   rand{-1,0,1}.
+                */
+                switch (rainbow_0_next[xy] - rainbow_0[xy]) {
+                case 1: case 1-COLORS:
+                case 2: case 2-COLORS:
+                    rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, (rand()%3)-1);
+                    break;
+                default:
+                    rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, (rand()%3)-1);
+                    break;
+                }
+                // CR rrheingans-yoo: maybe compute/apply turing a few
+                // times at [xy] right now?
             } else {
-                rainbow_1_next[xy] = compute_cyclic(rainbow_1, impatience_1, xy);
-            }
-            
-            // evolve pressure_(orth|diag)
-            compute_decay(
-                pressure_orth, pressure_diag,
-                pressure_orth_next, pressure_diag_next,
-                scratch, scratch, scratch, scratch,
-                xy
-            );
-            
-            if (pressure_self[xy] > 0) {
-                pressure_self[xy] -= 1;
-                pressure_orth_next[xy] = pressure_diag_next[xy] = PRESSURE_RADIUS_TICKS;
+                if ((rainbow_0[xy] + 1 - color_of_turing(xy, turing_u, turing_v))%EXTRA_COLORS < EXTRA_COLORS/2) {
+                    extra_color_to_turing(
+                        xy,
+                        (extra_color_of_turing(xy, turing_u, turing_v)-3+EXTRA_COLORS)%EXTRA_COLORS,
+                        turing_u,
+                        turing_v
+                    );
+                } else {
+                    extra_color_to_turing(
+                        xy,
+                        (extra_color_of_turing(xy, turing_u, turing_v)+3+EXTRA_COLORS)%EXTRA_COLORS,
+                        turing_u,
+                        turing_v
+                    );
+                }
+                rainbow_0_next[xy] = rainbow_0[xy];
             }
         }
         
-        excitement[xy] += 1.0 / 3.0;
-        excitement[xy] += pressure_orth[xy] * 2 / 3 / PRESSURE_RADIUS_TICKS;
-        
-        if (
-            1
-            && (epoch) % WILDFIRE_SPEEDUP == 0
-            #ifdef UMBRARY
-                && !umbrary_active
-            #endif /* UMBRARY */
-            && ( excitement[xy] > 1.0
-                 || ((waves_orth_next[xy] / 17) % 800) > 800 - 1 - 6
-               )
-        ) {
-            // evolve rainbow_0
-            rainbow_0_next[xy] = compute_cyclic(rainbow_0, impatience_0, xy);
-            
-            // maybe sync (turing_u, turing_v) from rainbow_0
-            if (
-                rainbow_0_next[xy] != rainbow_0[xy]
-                && rainbow_0_next[xy] != color_of_turing(xy, turing_u, turing_v)
-            ) {
-                if (1) {
-                    rainbow_add_to_turing(xy, rainbow_0_next, turing_u, turing_v);
-                    if ((rainbow_0_next[xy] - rainbow_0[xy] + COLORS)%COLORS == 2) {
-                        rainbow_add_to_turing(xy, rainbow_0_next, turing_u, turing_v);
-                    }
-                } else if (
-                    (1 + rainbow_0_next[xy] - color_of_turing(xy, turing_u, turing_v) + COLORS)%COLORS
-                    <= 3
-                ) {
-                    /* CR rrheingans-yoo: if you just incremented, then set
-                       to substate 0 (but display substate -1 for one round
-                       only). if you just randomized, then set to substate
-                       rand{-1,0,1}.
-                    */
-                    switch (rainbow_0_next[xy] - rainbow_0[xy]) {
-                    case 1: case 1-COLORS:
-                    case 2: case 2-COLORS:
-                        rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, (rand()%3)-1);
-                        break;
-                    default:
-                        rainbow_to_turing(xy, rainbow_0_next, turing_u, turing_v, (rand()%3)-1);
-                        break;
-                    }
-                    // CR rrheingans-yoo: maybe compute/apply turing a few
-                    // times at [xy] right now?
-                } else {
-                    if ((rainbow_0[xy] + 1 - color_of_turing(xy, turing_u, turing_v))%EXTRA_COLORS < EXTRA_COLORS/2) {
-                        extra_color_to_turing(
-                            xy,
-                            (extra_color_of_turing(xy, turing_u, turing_v)-3+EXTRA_COLORS)%EXTRA_COLORS,
-                            turing_u,
-                            turing_v
-                        );
-                    } else {
-                        extra_color_to_turing(
-                            xy,
-                            (extra_color_of_turing(xy, turing_u, turing_v)+3+EXTRA_COLORS)%EXTRA_COLORS,
-                            turing_u,
-                            turing_v
-                        );
-                    }
-                    rainbow_0_next[xy] = rainbow_0[xy];
-                }
-            }
-            
-            excitement[xy] -= 1.0;
-            if (excitement[xy] > 1.0) {
-                excitement[xy] = 1.0;
-            }
+        excitement[xy] -= 1.0;
+        if (excitement[xy] > 1.0) {
+            excitement[xy] = 1.0;
         }
     }
 }
@@ -401,7 +395,6 @@ void c_draw_and_io(
     turing_vector_t turing_u[],
     turing_vector_t turing_v[]
 ) {
-    // begin draw/increment mutex
     for (int xy = 0; xy < ROWS * COLS; ++xy) {
         #ifdef THROTTLE_LOOP
         if (xy % THROTTLE_LOOP_N == 0) {
@@ -531,23 +524,6 @@ void c_draw_and_io(
             ((waves_orth_next[xy] / 17) / 800) % COLORS
         );
         */
-        
-        /* CR rrheingans-yoo: can we use double-buffering instead? */
-        
-        // increment all states
-        control_directive_0[xy] = control_directive_0_next[xy];
-        control_directive_1[xy] = control_directive_1_next[xy];
-        control_orth[xy] = control_orth_next[xy];
-        control_diag[xy] = control_diag_next[xy];
-        
-        rainbow_0[xy] = rainbow_0_next[xy];
-        rainbow_1[xy] = rainbow_1_next[xy];
-        
-        pressure_orth[xy] = pressure_orth_next[xy];
-        pressure_diag[xy] = pressure_diag_next[xy];
-        
-        waves_orth[xy] = waves_orth_next[xy];
-        waves_diag[xy] = waves_diag_next[xy];
     }
     
     #ifdef SPECTRARY
@@ -567,7 +543,6 @@ void c_draw_and_io(
         }
     }
     #endif /* SPECTRARY */
-    // end draw/increment mutex
 }
 
 void c_draw_ui(
