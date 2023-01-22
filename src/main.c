@@ -325,25 +325,6 @@ void c_apply_other_rules_cell(
     #endif /* NOT_FOR_GG */
 }
 
-void c_compute_turing_evolution_cell(
-    int xy,
-    int spectrary_active,
-    int umbrary_active,
-    int epoch,
-    int control_directive_0[],
-    int rainbow_0[],
-    int rainbow_0_next[],
-    int pressure_self[],
-    int waves_orth_next[],
-    turing_vector_t turing_u[],
-    turing_vector_t turing_v[]
-) {
-    apply_turing(turing_u, xy, 1.0, (double)((epoch)%1000)/(1000.0));
-    apply_turing(turing_v, xy, 1.0, (double)((epoch)%1000)/(1000.0));
-    
-    normalize_turing(turing_u, turing_v, xy);
-}
-
 void c_apply_umbrary_cell(
     int xy,
     int umbrary_active,

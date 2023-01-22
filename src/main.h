@@ -69,20 +69,6 @@ void c_apply_other_rules_cell(
     int waves_orth_next[]
 );
 
-void c_compute_turing_evolution_cell(
-    int xy,
-    int spectrary_active,
-    int umbrary_active,
-    int epoch,
-    int control_directive_0[],
-    int rainbow_0[],
-    int rainbow_0_next[],
-    int pressure_self[],
-    int waves_orth_next[],
-    turing_vector_t turing_u[],
-    turing_vector_t turing_v[]
-);
-
 void c_apply_umbrary_cell(
     int xy,
     int umbrary_active,

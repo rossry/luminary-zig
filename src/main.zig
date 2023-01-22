@@ -307,7 +307,45 @@ pub fn main() !u8 {
         _ = main_c.gettimeofday(&fio_stop, null);
 
         main_c.compute_turing_all(&turing_u);
+        for (CELLS) |_, xy| {
+            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+            }
+
+            main_c.apply_turing(
+                @ptrCast([*c]main_c.turing_vector_t, &turing_u),
+                @intCast(c_int, xy),
+                @as(f64, 1.0),
+                @intToFloat(f64, @mod(epoch, 1_000)) / (1_000.0),
+            );
+        }
+
         main_c.compute_turing_all(&turing_v);
+        for (CELLS) |_, xy| {
+            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+            }
+
+            main_c.apply_turing(
+                @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+                @intCast(c_int, xy),
+                @as(f64, 1.0),
+                @intToFloat(f64, @mod(epoch, 1_000)) / (1_000.0),
+            );
+        }
+
+        for (CELLS) |_, xy| {
+            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+            }
+
+            main_c.normalize_turing(
+                @ptrCast([*c]main_c.turing_vector_t, &turing_u),
+                @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+                @intCast(c_int, xy),
+            );
+        }
+
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
@@ -322,20 +360,12 @@ pub fn main() !u8 {
                 &pressure_self,
                 &waves_orth_[next],
             );
+        }
 
-            main_c.c_compute_turing_evolution_cell(
-                @intCast(c_int, xy),
-                @boolToInt(spectrary_active),
-                @boolToInt(umbrary_active),
-                epoch,
-                &control_directive_0_[now],
-                &rainbow_0_[now],
-                &rainbow_0_[next],
-                &pressure_self,
-                &waves_orth_[next],
-                @ptrCast([*c]main_c.turing_vector_t, &turing_u),
-                @ptrCast([*c]main_c.turing_vector_t, &turing_v),
-            );
+        for (CELLS) |_, xy| {
+            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+            }
 
             if (UMBRARY and umbrary_active) {
                 main_c.c_apply_umbrary_cell(
