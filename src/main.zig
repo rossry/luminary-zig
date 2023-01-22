@@ -253,6 +253,7 @@ pub fn main() !u8 {
     main_c.c_init();
     defer main_c.c_exit();
 
+    // main loop
     while (epoch <= epoch_limit or epoch_limit <= 0) {
         epoch += 1;
 
@@ -285,6 +286,21 @@ pub fn main() !u8 {
             &waves_diag_next,
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+        );
+
+        main_c.c_compute_global_pattern_driver(
+            epoch,
+            scene,
+            &control_directive_0,
+            &control_directive_0_next,
+            &control_directive_1,
+            &control_directive_1_next,
+            &control_orth,
+            &control_orth_next,
+            &waves_orth,
+            &waves_orth_next,
+            &waves_diag,
+            &waves_diag_next,
         );
 
         _ = main_c.gettimeofday(&fio_start, null);

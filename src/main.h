@@ -37,6 +37,21 @@ void c_compute_cyclic_evolution(
     turing_vector_t turing_v[]
 );
 
+void c_compute_global_pattern_driver(
+    int epoch,
+    int scene,
+    int control_directive_0[],
+    int control_directive_0_next[],
+    int control_directive_1[],
+    int control_directive_1_next[],
+    int control_orth[],
+    int control_orth_next[],
+    int waves_orth[],
+    int waves_orth_next[],
+    int waves_diag[],
+    int waves_diag_next[]
+);
+
 void c_compute_fio_step(
     int spectrary_active,
     int umbrary_active,

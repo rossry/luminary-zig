@@ -222,7 +222,22 @@ void c_compute_cyclic_evolution(
             }
         }
     }
+}
     
+void c_compute_global_pattern_driver(
+    int epoch,
+    int scene,
+    int control_directive_0[],
+    int control_directive_0_next[],
+    int control_directive_1[],
+    int control_directive_1_next[],
+    int control_orth[],
+    int control_orth_next[],
+    int waves_orth[],
+    int waves_orth_next[],
+    int waves_diag[],
+    int waves_diag_next[]
+) {
     // drive waves_(orth|diag)'s top row
     /*
     waves_base_z_orig += WAVES_INCREMENT;
