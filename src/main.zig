@@ -235,6 +235,22 @@ pub fn main() !u8 {
     main_c.c_init();
     defer main_c.c_exit();
 
+    // TODO include these in the turing_vector struct
+    var turing_u_start = std.Thread.Semaphore{};
+    var turing_u_finalize = std.Thread.Semaphore{};
+    var turing_u_done = std.Thread.Semaphore{};
+    var turing_u_shutdown: bool = false;
+    var turing_v_start = std.Thread.Semaphore{};
+    var turing_v_finalize = std.Thread.Semaphore{};
+    var turing_v_done = std.Thread.Semaphore{};
+    var turing_v_shutdown: bool = false;
+
+    var turing_worker_u: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_u, &turing_u_start, &turing_u_finalize, &turing_u_done, &turing_u_shutdown });
+    var turing_worker_v: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_v, &turing_v_start, &turing_v_finalize, &turing_v_done, &turing_v_shutdown });
+
+    turing_u_start.post();
+    turing_v_start.post();
+
     // main loop
     while (epoch <= epoch_limit or epoch_limit <= 0) : (epoch += 1) {
         _ = main_c.gettimeofday(&start, null);
@@ -285,6 +301,9 @@ pub fn main() !u8 {
             }
         }
 
+        turing_u_finalize.post();
+        turing_v_finalize.post();
+
         main_c.c_compute_global_pattern_driver(
             epoch,
             scene,
@@ -310,26 +329,6 @@ pub fn main() !u8 {
             main_c.umbrary_update(epoch * 22_222);
         }
 
-        _ = main_c.gettimeofday(&fio_stop, null);
-
-        // TODO rework these into long-running worker loops coordinating via semaphore
-        var turing_worker_u: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_u });
-        var turing_worker_v: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_v });
-        turing_worker_u.join();
-        turing_worker_v.join();
-
-        for (CELLS) |_, xy| {
-            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
-                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
-            }
-
-            main_c.normalize_turing(
-                @ptrCast([*c]main_c.turing_vector_t, &turing_u),
-                @ptrCast([*c]main_c.turing_vector_t, &turing_v),
-                @intCast(c_int, xy),
-            );
-        }
-
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
@@ -345,6 +344,25 @@ pub fn main() !u8 {
                 &waves_orth_[next],
             );
         }
+
+        _ = main_c.gettimeofday(&fio_stop, null);
+        turing_u_done.wait();
+        turing_v_done.wait();
+
+        for (CELLS) |_, xy| {
+            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+            }
+
+            main_c.normalize_turing(
+                @ptrCast([*c]main_c.turing_vector_t, &turing_u),
+                @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+                @intCast(c_int, xy),
+            );
+        }
+
+        turing_u_start.post();
+        turing_v_start.post();
 
         if (UMBRARY and umbrary_active) {
             for (CELLS) |_, xy| {
@@ -438,6 +456,18 @@ pub fn main() !u8 {
         );
     }
 
+    turing_u_shutdown = true;
+    turing_v_shutdown = true;
+
+    turing_u_finalize.post();
+    turing_v_finalize.post();
+
+    turing_u_start.post();
+    turing_v_start.post();
+
+    turing_worker_u.join();
+    turing_worker_v.join();
+
     return 0;
 }
 
@@ -445,20 +475,32 @@ pub fn main() !u8 {
 fn turing_computation_worker(
     epoch: *c_int,
     turing_v: *[ROWS * COLS]main_c.turing_vector_t,
+    start: *std.Thread.Semaphore,
+    finalize: *std.Thread.Semaphore,
+    done: *std.Thread.Semaphore,
+    shutdown: *bool,
 ) void {
-    // TODO this can be broken across scales and parallelized further
-    main_c.compute_turing_all(@ptrCast([*c]main_c.turing_vector_t, turing_v));
+    while (!shutdown.*) {
+        start.*.wait();
 
-    for (CELLS) |_, xy| {
-        if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
-            std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+        // TODO this can be broken across scales and parallelized further
+        main_c.compute_turing_all(@ptrCast([*c]main_c.turing_vector_t, turing_v));
+
+        finalize.*.wait();
+
+        for (CELLS) |_, xy| {
+            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+            }
+
+            main_c.apply_turing(
+                @ptrCast([*c]main_c.turing_vector_t, turing_v),
+                @intCast(c_int, xy),
+                @as(f64, 1.0),
+                @intToFloat(f64, @mod(epoch.*, 1_000)) / (1_000.0),
+            );
         }
 
-        main_c.apply_turing(
-            @ptrCast([*c]main_c.turing_vector_t, turing_v),
-            @intCast(c_int, xy),
-            @as(f64, 1.0),
-            @intToFloat(f64, @mod(epoch.*, 1_000)) / (1_000.0),
-        );
+        done.*.post();
     }
 }
