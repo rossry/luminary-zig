@@ -237,7 +237,37 @@ pub fn main() !u8 {
     main_c.c_init();
     defer main_c.c_exit();
 
-    const N_PRIMARY_WORKERS = 3;
+    const N_PRIMARY_WORKERS = 4;
+
+    // TODO include these in the turing_vector struct
+    var turing_u_start = std.Thread.Semaphore{};
+    var turing_u_finalize = std.Thread.Semaphore{};
+    var turing_u_done = std.Thread.Semaphore{};
+    var turing_u_shutdown: bool = false;
+    var turing_v_start = std.Thread.Semaphore{};
+    var turing_v_finalize = std.Thread.Semaphore{};
+    var turing_v_done = std.Thread.Semaphore{};
+    var turing_v_shutdown: bool = false;
+
+    var turing_worker_u: std.Thread =
+        try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{
+        &epoch,
+        &turing_u,
+        &turing_u_start,
+        &turing_u_finalize,
+        N_PRIMARY_WORKERS,
+        &turing_u_done,
+        &turing_u_shutdown,
+    });
+    var turing_worker_v: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{
+        &epoch,
+        &turing_v,
+        &turing_v_start,
+        &turing_v_finalize,
+        N_PRIMARY_WORKERS,
+        &turing_v_done,
+        &turing_v_shutdown,
+    });
     var primary_worker_start = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** N_PRIMARY_WORKERS;
     var primary_worker_done = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** N_PRIMARY_WORKERS;
     var primary_workers_shutdown: bool = false;
@@ -270,24 +300,13 @@ pub fn main() !u8 {
                 &turing_v,
                 &primary_worker_start[i],
                 &primary_worker_done[i],
+                &turing_u_finalize,
+                &turing_v_finalize,
                 &primary_workers_shutdown,
             });
         }
         break :init xs;
     };
-
-    // TODO include these in the turing_vector struct
-    var turing_u_start = std.Thread.Semaphore{};
-    var turing_u_finalize = std.Thread.Semaphore{};
-    var turing_u_done = std.Thread.Semaphore{};
-    var turing_u_shutdown: bool = false;
-    var turing_v_start = std.Thread.Semaphore{};
-    var turing_v_finalize = std.Thread.Semaphore{};
-    var turing_v_done = std.Thread.Semaphore{};
-    var turing_v_shutdown: bool = false;
-
-    var turing_worker_u: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_u, &turing_u_start, &turing_u_finalize, &turing_u_done, &turing_u_shutdown });
-    var turing_worker_v: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_v, &turing_v_start, &turing_v_finalize, &turing_v_done, &turing_v_shutdown });
 
     if (!STRICT_EXECUTION_ORDERING) {
         for (primary_worker_start) |*start| {
@@ -310,11 +329,10 @@ pub fn main() !u8 {
         }
         for (primary_worker_done) |*done| {
             done.wait();
-        }
 
-        if (!STRICT_EXECUTION_ORDERING) {
-            turing_u_finalize.post();
-            turing_v_finalize.post();
+            // turing_x_finalize semaphores already posted by primary workers replacing the below
+            // turing_u_finalize.post();
+            // turing_v_finalize.post();
         }
 
         main_c.c_compute_global_pattern_driver(
@@ -342,6 +360,8 @@ pub fn main() !u8 {
             main_c.umbrary_update(epoch * 22_222);
         }
 
+        _ = main_c.gettimeofday(&time_fio_stop, null);
+
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
@@ -362,11 +382,14 @@ pub fn main() !u8 {
             turing_u_start.post();
             turing_v_start.post();
 
-            turing_u_finalize.post();
-            turing_v_finalize.post();
+            // finalize semaphores already posted by primary_workers, replacing the below
+            // var i:u8 = 0;
+            // while (i < N_PRIMARY_WORKERS) : (i += 1) {
+            //     turing_u_finalize.post();
+            //     turing_v_finalize.post();
+            // }
         }
 
-        _ = main_c.gettimeofday(&time_fio_stop, null);
         turing_u_done.wait();
         turing_v_done.wait();
 
@@ -431,7 +454,29 @@ pub fn main() !u8 {
             }
         }
 
-        main_c.c_draw_ui(
+        if (constants.cairo.PRINT_VERBOSE) {
+            std.debug.print("compute:{d:5.1}ms  ", .{(compute_avg - fio_avg) / 1_000.0});
+            std.debug.print("file io:{d:5.1}ms  ", .{fio_avg / 1_000});
+            std.debug.print("draw:{d:5.1}ms  ", .{draw_avg / 1_000});
+            std.debug.print("refresh:{d:5.1}ms/{d}  ", .{ refresh_avg / 1_000, constants.DISPLAY_FLUSH_EPOCHS });
+            std.debug.print("wait:{d:5.1}ms  ", .{wait_avg / 1_000});
+            std.debug.print("sleep:{d:5.1}ms  ", .{sleep_avg / 1_000});
+            std.debug.print("Hz:{d:5.1}/{d}(/{d})  ", .{ 1.0 / (total_avg / 1_000_000), constants.DISPLAY_FLUSH_EPOCHS, constants.WILDFIRE_SPEEDUP });
+            if (!constants.cairo.VIDEO_FRAMES) {
+                std.debug.print("\n", .{});
+            }
+        }
+
+        main_c.c_display_flush(
+            epoch,
+            &time_refreshed,
+            &n_dirty_pixels,
+            &n_dirty_pixels_avg,
+        );
+
+        _ = main_c.gettimeofday(&time_refreshed, null);
+
+        main_c.c_draw_ui_and_handle_input(
             @boolToInt(spectrary_active),
             @boolToInt(umbrary_active),
             epoch,
@@ -452,7 +497,6 @@ pub fn main() !u8 {
             &time_stop,
             &time_fio_start,
             &time_fio_stop,
-            &n_dirty_pixels,
             &compute_avg,
             &fio_avg,
             &draw_avg,
@@ -513,7 +557,9 @@ fn primary_computation_worker(
     turing_u: *[ROWS * COLS]main_c.turing_vector_t,
     turing_v: *[ROWS * COLS]main_c.turing_vector_t,
     start: *std.Thread.Semaphore,
-    done: *std.Thread.Semaphore,
+    done1: *std.Thread.Semaphore,
+    done2: *std.Thread.Semaphore,
+    done3: *std.Thread.Semaphore,
     shutdown: *bool,
 ) void {
     while (!shutdown.*) {
@@ -564,7 +610,9 @@ fn primary_computation_worker(
             }
         }
 
-        done.*.post();
+        done1.*.post();
+        done2.*.post();
+        done3.*.post();
     }
 }
 
@@ -587,6 +635,7 @@ fn turing_computation_worker(
     turing_v: *[ROWS * COLS]main_c.turing_vector_t,
     start: *std.Thread.Semaphore,
     finalize: *std.Thread.Semaphore,
+    finalize_waits: u8,
     done: *std.Thread.Semaphore,
     shutdown: *bool,
 ) void {
@@ -594,10 +643,12 @@ fn turing_computation_worker(
         start.*.wait();
 
         // TODO this can be broken across scales and parallelized further
-        // TODO and/or we can improve performance by updating <all channels per loop
         main_c.compute_turing_all(@ptrCast([*c]main_c.turing_vector_t, turing_v), scales_to_update[@intCast(usize, @mod(epoch.*, constants.MAX_TURING_SCALES))]);
 
-        finalize.*.wait();
+        var i: u8 = 0;
+        while (i < finalize_waits) : (i += 1) {
+            finalize.*.wait();
+        }
 
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {

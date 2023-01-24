@@ -15,6 +15,8 @@
 #define RAND_DOUBLE ((double)rand() / (double)(RAND_MAX))
 
 // input, output, control
+//#define KEYBOARD_INPUT
+
 //#define SACN_SERVER
 #ifdef SACN_SERVER
     //#define SACN_TEST_CLIENT // use some keyboard actions to send test-client messages to the server
@@ -122,7 +124,7 @@
 #define GREY_46 250
 
 // speeds, times, distances
-#define BASE_HZ                    14
+#define BASE_HZ                    24
 #define WILDFIRE_SPEEDUP           3// wildfire effects propagate at this multiple of BASE_HZ
 #define DISPLAY_FLUSH_EPOCHS       1 // flush display every # epochs
 
@@ -162,7 +164,7 @@
 #define OUTPUT_CAIRO
 #ifdef OUTPUT_CAIRO
     //#define OUTPUT_CAIRO_FULLSCREEN
-    #define OUTPUT_CAIRO_VIDEO_FRAMES
+    //#define OUTPUT_CAIRO_VIDEO_FRAMES
     #ifdef OUTPUT_NCURSES
     #else /* OUTPUT_NCURSES */
         #define CAIRO_PRINT_VERBOSE

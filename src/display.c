@@ -1011,9 +1011,10 @@ int display_flush(int epoch) {
                 }
             }
         #elif defined CAIRO_SNAPSHOT_EPOCH
-            cairo_surface_t *cairo_shapshot_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, COLS * CAIRO_ZOOM, ROWS * CAIRO_ZOOM);
-            cairo_t *cairo_shapshot_cr = cairo_create(cairo_shapshot_surface);
             if (epoch == CAIRO_SNAPSHOT_EPOCH) {
+                cairo_surface_t *cairo_shapshot_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, COLS * CAIRO_ZOOM, ROWS * CAIRO_ZOOM);
+                cairo_t *cairo_shapshot_cr = cairo_create(cairo_shapshot_surface);
+                
                 for (int xy = 0; xy < ROWS * COLS; ++xy) {
                     int x = xy % COLS;
                     int y = xy / COLS;

@@ -11,6 +11,8 @@ const std = @import("std");
 // pub fn RAND_DOUBLE() callconv(.Inline) u16 {return (double)rand() / (double)(RAND_MAX);}
 
 // input, output, control
+pub const KEYBOARD_INPUT: bool = false;
+
 pub const SACN_SERVER: bool = false;
 pub const SACN_TEST_CLIENT: bool = SACN_SERVER and false; // use some keyboard actions to send test-client messages to the server
 
@@ -146,7 +148,7 @@ pub const gif = if (OUTPUT_GIF) struct {
 pub const OUTPUT_CAIRO: bool = true;
 pub const cairo = if (OUTPUT_CAIRO) struct {
     pub const FULLSCREEN: bool = false;
-    pub const VIDEO_FRAMES: bool = true;
+    pub const VIDEO_FRAMES: bool = false;
     pub const PRINT_VERBOSE: bool = !OUTPUT_NCURSES and true;
     pub const SNAPSHOT_EPOCH: u16 = 1_323;
 

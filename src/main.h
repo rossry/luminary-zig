@@ -83,7 +83,14 @@ void c_draw_and_io(
     turing_vector_t turing_v[]
 );
 
-void c_draw_ui(
+void c_display_flush(
+    int epoch,
+    timeval_t* refreshed,
+    int* n_dirty_pixels,
+    double* n_dirty_pixels_avg
+);
+
+void c_draw_ui_and_handle_input(
     int spectrary_active,
     int umbrary_active,
     int epoch,
@@ -104,7 +111,6 @@ void c_draw_ui(
     timeval_t* stop,
     timeval_t* fio_start,
     timeval_t* fio_stop,
-    int* n_dirty_pixels,
     double* compute_avg,
     double* fio_avg,
     double* draw_avg,
