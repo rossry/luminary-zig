@@ -211,19 +211,19 @@ pub fn main() !u8 {
     }
 
     // performance-monitoring variables
-    var start: main_c.timeval_t = init: {
+    var time_start: main_c.timeval_t = init: {
         var x: main_c.timeval_t = undefined;
         _ = main_c.gettimeofday(&x, null);
         break :init x;
     };
-    var computed: main_c.timeval_t = undefined;
-    var drawn: main_c.timeval_t = undefined;
-    var refreshed: main_c.timeval_t = undefined;
-    var handled: main_c.timeval_t = undefined;
-    var slept: main_c.timeval_t = undefined;
-    var stop: main_c.timeval_t = undefined;
-    var fio_start: main_c.timeval_t = undefined;
-    var fio_stop: main_c.timeval_t = undefined;
+    var time_computed: main_c.timeval_t = undefined;
+    var time_drawn: main_c.timeval_t = undefined;
+    var time_refreshed: main_c.timeval_t = undefined;
+    var time_handled: main_c.timeval_t = undefined;
+    var time_slept: main_c.timeval_t = undefined;
+    var time_stop: main_c.timeval_t = undefined;
+    var time_fio_start: main_c.timeval_t = undefined;
+    var time_fio_stop: main_c.timeval_t = undefined;
     var n_dirty_pixels: c_int = 0;
     var compute_avg: f64 = 0;
     var fio_avg: f64 = 0;
@@ -236,6 +236,45 @@ pub fn main() !u8 {
 
     main_c.c_init();
     defer main_c.c_exit();
+
+    const N_PRIMARY_WORKERS = 3;
+    var primary_worker_start = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** N_PRIMARY_WORKERS;
+    var primary_worker_done = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** N_PRIMARY_WORKERS;
+    var primary_workers_shutdown: bool = false;
+
+    var primary_workers = init: {
+        var xs: [N_PRIMARY_WORKERS]std.Thread = undefined;
+        for (xs) |*x, i| {
+            x.* = try std.Thread.spawn(std.Thread.SpawnConfig{}, primary_computation_worker, .{
+                @intCast(u16, i),
+                N_PRIMARY_WORKERS,
+                &now,
+                &next,
+                &epoch,
+                &scratch,
+                &control_directive_0_,
+                &control_directive_1_,
+                &control_orth_,
+                &control_diag_,
+                &rainbow_0_,
+                &impatience_0,
+                &rainbow_1_,
+                &impatience_1,
+                &pressure_self,
+                &pressure_orth_,
+                &pressure_diag_,
+                &excitement,
+                &waves_orth_,
+                &waves_diag_,
+                &turing_u,
+                &turing_v,
+                &primary_worker_start[i],
+                &primary_worker_done[i],
+                &primary_workers_shutdown,
+            });
+        }
+        break :init xs;
+    };
 
     // TODO include these in the turing_vector struct
     var turing_u_start = std.Thread.Semaphore{};
@@ -251,58 +290,26 @@ pub fn main() !u8 {
     var turing_worker_v: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_v, &turing_v_start, &turing_v_finalize, &turing_v_done, &turing_v_shutdown });
 
     if (!STRICT_EXECUTION_ORDERING) {
+        for (primary_worker_start) |*start| {
+            start.post();
+        }
+
         turing_u_start.post();
         turing_v_start.post();
     }
 
     // main loop
     while (epoch <= epoch_limit or epoch_limit <= 0) : (epoch += 1) {
-        _ = main_c.gettimeofday(&start, null);
+        _ = main_c.gettimeofday(&time_start, null);
 
         // begin computing evolution
-        // TODO run this loop in n-way multithreaded parallel
-        for (CELLS) |_, xy| {
-            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
-                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+        if (STRICT_EXECUTION_ORDERING) {
+            for (primary_worker_start) |*start| {
+                start.post();
             }
-
-            var x = xy % COLS;
-            var y = xy / COLS;
-
-            if (!constants.PETALS_ACTIVE or y < constants.PETAL_ROWS or x < constants.FLOOR_COLS) {
-                // thread-safe to run on cells in parallel (see notes in C definition)
-                main_c.c_compute_cyclic_evolution_cell(
-                    @intCast(c_int, xy),
-                    epoch,
-                    &scratch,
-                    &control_directive_0_[now], // read-only
-                    &control_directive_0_[next], // only accesses [xy]
-                    &control_directive_1_[now], // read-only
-                    &control_directive_1_[next], // only accesses [xy]
-                    &control_orth_[now], // read-only
-                    &control_orth_[next], // only accesses [xy]
-                    &control_diag_[now], // read-only
-                    &control_diag_[next], // only accesses [xy]
-                    &rainbow_0_[now], // read-only
-                    &rainbow_0_[next], // only accesses [xy]
-                    &impatience_0, // only accesses [xy]
-                    &rainbow_1_[now], // read-only
-                    &rainbow_1_[next], // only accesses [xy]
-                    &impatience_1, // only accesses [xy]
-                    &pressure_self, // read-only
-                    &pressure_orth_[now], // read-only
-                    &pressure_orth_[next], // only accesses [xy]
-                    &pressure_diag_[now], // read-only
-                    &pressure_diag_[next], // only accesses [xy]
-                    &excitement, // only accesses [xy]
-                    &waves_orth_[now], // read-only
-                    &waves_orth_[next], // only accesses [xy]
-                    &waves_diag_[now], // read-only
-                    &waves_diag_[next], // only accesses [xy]
-                    @ptrCast([*c]main_c.turing_vector_t, &turing_u), // only accesses [xy]
-                    @ptrCast([*c]main_c.turing_vector_t, &turing_v), // only accesses [xy]
-                );
-            }
+        }
+        for (primary_worker_done) |*done| {
+            done.wait();
         }
 
         if (!STRICT_EXECUTION_ORDERING) {
@@ -325,7 +332,7 @@ pub fn main() !u8 {
             &waves_diag_[next],
         );
 
-        _ = main_c.gettimeofday(&fio_start, null);
+        _ = main_c.gettimeofday(&time_fio_start, null);
 
         if (SPECTRARY and spectrary_active) {
             main_c.spectrary_update();
@@ -359,7 +366,7 @@ pub fn main() !u8 {
             turing_v_finalize.post();
         }
 
-        _ = main_c.gettimeofday(&fio_stop, null);
+        _ = main_c.gettimeofday(&time_fio_stop, null);
         turing_u_done.wait();
         turing_v_done.wait();
 
@@ -398,33 +405,13 @@ pub fn main() !u8 {
         }
         // end computing evolution
 
-        _ = main_c.gettimeofday(&computed, null);
+        _ = main_c.gettimeofday(&time_computed, null);
 
         // begin draw/increment mutex
         main_c.c_draw_and_io(
             @boolToInt(spectrary_active),
             @boolToInt(umbrary_active),
             epoch,
-            &control_directive_0_[now],
-            &control_directive_0_[next],
-            &control_directive_1_[now],
-            &control_directive_1_[next],
-            &control_orth_[now],
-            &control_orth_[next],
-            &control_diag_[now],
-            &control_diag_[next],
-            &rainbow_0_[now],
-            &rainbow_0_[next],
-            &rainbow_1_[now],
-            &rainbow_1_[next],
-            &pressure_orth_[now],
-            &pressure_orth_[next],
-            &pressure_diag_[now],
-            &pressure_diag_[next],
-            &waves_orth_[now],
-            &waves_orth_[next],
-            &waves_diag_[now],
-            &waves_diag_[next],
             @ptrCast([*c]main_c.turing_vector_t, &turing_u),
             @ptrCast([*c]main_c.turing_vector_t, &turing_v),
         );
@@ -436,7 +423,13 @@ pub fn main() !u8 {
         next_next = undefined;
         // end draw/increment mutex
 
-        _ = main_c.gettimeofday(&drawn, null);
+        _ = main_c.gettimeofday(&time_drawn, null);
+
+        if (!STRICT_EXECUTION_ORDERING) {
+            for (primary_worker_start) |*start| {
+                start.post();
+            }
+        }
 
         main_c.c_draw_ui(
             @boolToInt(spectrary_active),
@@ -449,17 +442,16 @@ pub fn main() !u8 {
             &control_orth_[now],
             &rainbow_tone,
             &waves_orth_[now],
-            &waves_orth_[next], // huh? this seems unnecessary or misplaced
             in_chr,
-            &start,
-            &computed,
-            &drawn,
-            &refreshed,
-            &handled,
-            &slept,
-            &stop,
-            &fio_start,
-            &fio_stop,
+            &time_start,
+            &time_computed,
+            &time_drawn,
+            &time_refreshed,
+            &time_handled,
+            &time_slept,
+            &time_stop,
+            &time_fio_start,
+            &time_fio_stop,
             &n_dirty_pixels,
             &compute_avg,
             &fio_avg,
@@ -470,6 +462,14 @@ pub fn main() !u8 {
             &total_avg,
             &n_dirty_pixels_avg,
         );
+    }
+
+    primary_workers_shutdown = true;
+    for (primary_worker_start) |*start| {
+        start.post();
+    }
+    for (primary_workers) |*worker| {
+        worker.join();
     }
 
     turing_u_shutdown = true;
@@ -487,6 +487,87 @@ pub fn main() !u8 {
     return 0;
 }
 
+// TODO move worker-thread logic out to separate files
+
+fn primary_computation_worker(
+    xy_start: u16,
+    xy_increment: u16,
+    now: *u8,
+    next: *u8,
+    epoch: *c_int,
+    scratch: *[ROWS * COLS]c_int,
+    control_directive_0_: *[2][ROWS * COLS]c_int,
+    control_directive_1_: *[2][ROWS * COLS]c_int,
+    control_orth_: *[2][ROWS * COLS]c_int,
+    control_diag_: *[2][ROWS * COLS]c_int,
+    rainbow_0_: *[2][ROWS * COLS]c_int,
+    impatience_0: *[ROWS * COLS]c_int,
+    rainbow_1_: *[2][ROWS * COLS]c_int,
+    impatience_1: *[ROWS * COLS]c_int,
+    pressure_self: *[ROWS * COLS]c_int,
+    pressure_orth_: *[2][ROWS * COLS]c_int,
+    pressure_diag_: *[2][ROWS * COLS]c_int,
+    excitement: *[ROWS * COLS]f64,
+    waves_orth_: *[2][ROWS * COLS]c_int,
+    waves_diag_: *[2][ROWS * COLS]c_int,
+    turing_u: *[ROWS * COLS]main_c.turing_vector_t,
+    turing_v: *[ROWS * COLS]main_c.turing_vector_t,
+    start: *std.Thread.Semaphore,
+    done: *std.Thread.Semaphore,
+    shutdown: *bool,
+) void {
+    while (!shutdown.*) {
+        start.*.wait();
+
+        var xy = xy_start;
+        while (xy < ROWS * COLS and true) : (xy += xy_increment) {
+            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                std.time.sleep(constants.THROTTLE_LOOP_NSEC);
+            }
+
+            var x = xy % COLS;
+            var y = xy / COLS;
+
+            if (!constants.PETALS_ACTIVE or y < constants.PETAL_ROWS or x < constants.FLOOR_COLS) {
+                // thread-safe to run on cells in parallel (see notes in C definition)
+                main_c.c_compute_cyclic_evolution_cell(
+                    @intCast(c_int, xy),
+                    epoch.*,
+                    scratch,
+                    &control_directive_0_[now.*], // read-only
+                    &control_directive_0_[next.*], // only accesses [xy]
+                    &control_directive_1_[now.*], // read-only
+                    &control_directive_1_[next.*], // only accesses [xy]
+                    &control_orth_[now.*], // read-only
+                    &control_orth_[next.*], // only accesses [xy]
+                    &control_diag_[now.*], // read-only
+                    &control_diag_[next.*], // only accesses [xy]
+                    &rainbow_0_[now.*], // read-only
+                    &rainbow_0_[next.*], // only accesses [xy]
+                    impatience_0, // only accesses [xy]
+                    &rainbow_1_[now.*], // read-only
+                    &rainbow_1_[next.*], // only accesses [xy]
+                    impatience_1, // only accesses [xy]
+                    pressure_self, // read-only
+                    &pressure_orth_[now.*], // read-only
+                    &pressure_orth_[next.*], // only accesses [xy]
+                    &pressure_diag_[now.*], // read-only
+                    &pressure_diag_[next.*], // only accesses [xy]
+                    excitement, // only accesses [xy]
+                    &waves_orth_[now.*], // read-only
+                    &waves_orth_[next.*], // only accesses [xy]
+                    &waves_diag_[now.*], // read-only
+                    &waves_diag_[next.*], // only accesses [xy]
+                    @ptrCast([*c]main_c.turing_vector_t, turing_u), // only accesses [xy]
+                    @ptrCast([*c]main_c.turing_vector_t, turing_v), // only accesses [xy]
+                );
+            }
+        }
+
+        done.*.post();
+    }
+}
+
 const scales_to_update =
     if (STRICT_EXECUTION_ORDERING)
     [_]u8{0xff} ** constants.MAX_TURING_SCALES
@@ -501,7 +582,6 @@ else
     //[constants.MAX_TURING_SCALES]u8{0b10000,0b01000,0b00100,0b00010,0b00001,}
     ;
 
-// TODO move worker-thread logic out to separate files
 fn turing_computation_worker(
     epoch: *c_int,
     turing_v: *[ROWS * COLS]main_c.turing_vector_t,

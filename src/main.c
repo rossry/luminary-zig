@@ -349,26 +349,6 @@ void c_draw_and_io(
     int spectrary_active,
     int umbrary_active,
     int epoch,
-    int control_directive_0[],
-    int control_directive_0_next[],
-    int control_directive_1[],
-    int control_directive_1_next[],
-    int control_orth[],
-    int control_orth_next[],
-    int control_diag[],
-    int control_diag_next[],
-    int rainbow_0[],
-    int rainbow_0_next[],
-    int rainbow_1[],
-    int rainbow_1_next[],
-    int pressure_orth[],
-    int pressure_orth_next[],
-    int pressure_diag[],
-    int pressure_diag_next[],
-    int waves_orth[],
-    int waves_orth_next[],
-    int waves_diag[],
-    int waves_diag_next[],
     turing_vector_t turing_u[],
     turing_vector_t turing_v[]
 ) {
@@ -533,7 +513,6 @@ void c_draw_ui(
     int control_orth[],
     int rainbow_tone[],
     int waves_orth[],
-    int waves_orth_next[],
     int in_chr,
     timeval_t* start,
     timeval_t* computed,
@@ -782,7 +761,6 @@ void c_draw_ui(
             mvprintw(0, 0, "initializing (%.0f%%)", 100.0 * (epoch) / INITIALIZATION_EPOCHS);
             refresh();
         }
-        gettimeofday(refreshed, NULL);
         gettimeofday(handled, NULL);
     }
     
@@ -852,13 +830,13 @@ void c_draw_ui(
     }
     for (int ii=0; ii<5; ++ii) {
         int xy = 8*COLS + (PETAL_COLS * ii) + 8;
-        display_light(ii*2, ((waves_orth_next[xy] / 17) / RAINBOW_TONE_EPOCHS) % COLORS);
+        display_light(ii*2, ((waves_orth[xy] / 17) / RAINBOW_TONE_EPOCHS) % COLORS);
         mvprintw(DIAGNOSTIC_ROWS+(2*ii + 1), 0, "%03d: %05d.  %02d.%04d.%02d (%5d:%06d|%5d)",
             520 + ii*2,
-            ((waves_orth_next[xy] / 17) / RAINBOW_TONE_EPOCHS) / COLORS,
-            ((waves_orth_next[xy] / 17) / RAINBOW_TONE_EPOCHS) % COLORS,
-            ((waves_orth_next[xy] / 17) % RAINBOW_TONE_EPOCHS),
-            ((waves_orth_next[xy] % 17)),
+            ((waves_orth[xy] / 17) / RAINBOW_TONE_EPOCHS) / COLORS,
+            ((waves_orth[xy] / 17) / RAINBOW_TONE_EPOCHS) % COLORS,
+            ((waves_orth[xy] / 17) % RAINBOW_TONE_EPOCHS),
+            ((waves_orth[xy] % 17)),
             control_directive_0[xy],
             control_orth[xy],
             control_directive_1[xy]
@@ -868,13 +846,13 @@ void c_draw_ui(
         attroff(COLOR_PAIR(1 + (rainbow_tone[xy]+1) % COLORS));
         
         xy = 8*COLS + (PETAL_COLS * ii) + 22;
-        display_light(ii*2+1, ((waves_orth_next[xy] / 17) / RAINBOW_TONE_EPOCHS) % COLORS);
+        display_light(ii*2+1, ((waves_orth[xy] / 17) / RAINBOW_TONE_EPOCHS) % COLORS);
         mvprintw(DIAGNOSTIC_ROWS+(2*ii + 2), 0, "%03d: %05d.  %02d.%04d.%02d (%5d:%06d|%5d)",
             520 + ii*2 + 1,
-            ((waves_orth_next[xy] / 17) / RAINBOW_TONE_EPOCHS) / COLORS,
-            ((waves_orth_next[xy] / 17) / RAINBOW_TONE_EPOCHS) % COLORS,
-            ((waves_orth_next[xy] / 17) % RAINBOW_TONE_EPOCHS),
-            ((waves_orth_next[xy] % 17)),
+            ((waves_orth[xy] / 17) / RAINBOW_TONE_EPOCHS) / COLORS,
+            ((waves_orth[xy] / 17) / RAINBOW_TONE_EPOCHS) % COLORS,
+            ((waves_orth[xy] / 17) % RAINBOW_TONE_EPOCHS),
+            ((waves_orth[xy] % 17)),
             control_directive_0[xy],
             control_orth[xy],
             control_directive_1[xy]
