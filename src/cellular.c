@@ -785,49 +785,47 @@ void diffuse_turing_reagent_vert(
     }
 }
 
-void diffuse_turing_reagents(turing_vector_t* vv, uint8_t scales_to_update) {
-    if (1<<0 & scales_to_update) {
+void diffuse_turing_reagents(turing_vector_t* vv, uint8_t scl) {
+    switch (scl) {
+    case 0:
         diffuse_turing_reagent_horiz(vv,  2, &vv[0].scale[0].activ, &vv[0].scale[0].n_activ);
         diffuse_turing_reagent_horiz(vv,  4, &vv[0].scale[0].inhib, &vv[0].scale[0].n_inhib);
         
         diffuse_turing_reagent_vert(vv,  2, &vv[0].scale[0].activ, &vv[0].scale[0].n_activ);
         diffuse_turing_reagent_vert(vv,  4, &vv[0].scale[0].inhib, &vv[0].scale[0].n_inhib);
-    }
-    
-    if (1<<1 & scales_to_update) {
+        break;
+    case 1:
         diffuse_turing_reagent_horiz(vv,  4, &vv[0].scale[1].activ, &vv[0].scale[1].n_activ);
         diffuse_turing_reagent_horiz(vv,  8, &vv[0].scale[1].inhib, &vv[0].scale[1].n_inhib);
         
         diffuse_turing_reagent_vert(vv,  4, &vv[0].scale[1].activ, &vv[0].scale[1].n_activ);
         diffuse_turing_reagent_vert(vv,  8, &vv[0].scale[1].inhib, &vv[0].scale[1].n_inhib);
-    }
-    
-    if (1<<2 & scales_to_update) {
+        break;
+    case 2:
         diffuse_turing_reagent_horiz(vv,  8, &vv[0].scale[2].activ, &vv[0].scale[2].n_activ);
         diffuse_turing_reagent_horiz(vv, 16, &vv[0].scale[2].inhib, &vv[0].scale[2].n_inhib);
         
         diffuse_turing_reagent_vert(vv,  8, &vv[0].scale[2].activ, &vv[0].scale[2].n_activ);
         diffuse_turing_reagent_vert(vv, 16, &vv[0].scale[2].inhib, &vv[0].scale[2].n_inhib);
-    }
-    
-    if (1<<3 & scales_to_update) {
+        break;
+    case 3:
         diffuse_turing_reagent_horiz(vv, 16, &vv[0].scale[3].activ, &vv[0].scale[3].n_activ);
         diffuse_turing_reagent_horiz(vv, 32, &vv[0].scale[3].inhib, &vv[0].scale[3].n_inhib);
         
         diffuse_turing_reagent_vert(vv, 16, &vv[0].scale[3].activ, &vv[0].scale[3].n_activ);
         diffuse_turing_reagent_vert(vv, 32, &vv[0].scale[3].inhib, &vv[0].scale[3].n_inhib);
-    }
-    
-    if (1<<4 & scales_to_update) {
+        break;
+    case 4:
         diffuse_turing_reagent_horiz(vv, 32, &vv[0].scale[4].activ, &vv[0].scale[4].n_activ);
         diffuse_turing_reagent_horiz(vv, 64, &vv[0].scale[4].inhib, &vv[0].scale[4].n_inhib);
         
         diffuse_turing_reagent_vert(vv, 32, &vv[0].scale[4].activ, &vv[0].scale[4].n_activ);
         diffuse_turing_reagent_vert(vv, 64, &vv[0].scale[4].inhib, &vv[0].scale[4].n_inhib);
+        break;
     }
 }
 
-void compute_turing_all(turing_vector_t* vv, uint8_t scales_to_update) {
+void compute_turing_scale(turing_vector_t* vv, uint8_t scl) {
     // initialize reagent arrays
     for (int xy=0; xy<ROWS*COLS; ++xy) {
         #ifdef THROTTLE_LOOP
@@ -836,20 +834,17 @@ void compute_turing_all(turing_vector_t* vv, uint8_t scales_to_update) {
         }
         #endif /* THROTTLE_LOOP */
         
-        for (int scl=0; scl<vv[xy].n_scales; ++scl) {
-            if (1<<scl & scales_to_update) {
-                vv[xy].scale[scl].n_activ = 1;
-                vv[xy].scale[scl].activ = vv[xy].state;
-                
-                vv[xy].scale[scl].n_inhib = 1;
-                vv[xy].scale[scl].inhib = vv[xy].state;
-            }
-        }
+
+        vv[xy].scale[scl].n_activ = 1;
+        vv[xy].scale[scl].activ = vv[xy].state;
+        
+        vv[xy].scale[scl].n_inhib = 1;
+        vv[xy].scale[scl].inhib = vv[xy].state;
     }
     
     // diffuse reagents -- N-pass box blur
     for (int ii=0; ii<TURING_DIFFUSION_PASSES; ++ii) {
-        diffuse_turing_reagents(vv, scales_to_update);
+        diffuse_turing_reagents(vv, scl);
     }
     
     // normalize reagents
@@ -860,12 +855,8 @@ void compute_turing_all(turing_vector_t* vv, uint8_t scales_to_update) {
         }
         #endif /* THROTTLE_LOOP */
         
-        for (int scl=0; scl<vv[xy].n_scales; ++scl) {
-            if (1<<scl & scales_to_update) {
-                vv[xy].scale[scl].activ /= vv[xy].scale[scl].n_activ;
-                vv[xy].scale[scl].inhib /= vv[xy].scale[scl].n_inhib;
-            }
-        }
+        vv[xy].scale[scl].activ /= vv[xy].scale[scl].n_activ;
+        vv[xy].scale[scl].inhib /= vv[xy].scale[scl].n_inhib;
     }
 }
 

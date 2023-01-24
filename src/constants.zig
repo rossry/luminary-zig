@@ -109,7 +109,7 @@ pub const colors = struct {
 };
 
 // speeds, times, distances
-pub const BASE_HZ: u16 = 14;
+pub const BASE_HZ: u16 = 72;
 pub const WILDFIRE_SPEEDUP: u16 = 3; // wildfire effects propagate at this multiple of BASE_HZ
 pub const DISPLAY_FLUSH_EPOCHS: u16 = 1; // flush display every # epochs
 
@@ -148,7 +148,7 @@ pub const gif = if (OUTPUT_GIF) struct {
 pub const OUTPUT_CAIRO: bool = true;
 pub const cairo = if (OUTPUT_CAIRO) struct {
     pub const FULLSCREEN: bool = false;
-    pub const VIDEO_FRAMES: bool = false;
+    pub const VIDEO_FRAMES: bool = true;
     pub const PRINT_VERBOSE: bool = !OUTPUT_NCURSES and true;
     pub const SNAPSHOT_EPOCH: u16 = 1_323;
 

@@ -76,9 +76,9 @@ void compute_decay(
     int xy
 );
 
-void compute_turing_all(
+void compute_turing_scale(
     turing_vector_t* reagents,
-    uint8_t scales_to_update
+    uint8_t scale
 );
 
 void apply_turing(

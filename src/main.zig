@@ -243,11 +243,10 @@ pub fn main() !u8 {
     var turing_u_start = std.Thread.Semaphore{};
     var turing_u_finalize = std.Thread.Semaphore{};
     var turing_u_done = std.Thread.Semaphore{};
-    var turing_u_shutdown: bool = false;
     var turing_v_start = std.Thread.Semaphore{};
     var turing_v_finalize = std.Thread.Semaphore{};
     var turing_v_done = std.Thread.Semaphore{};
-    var turing_v_shutdown: bool = false;
+    var turing_shutdown: bool = false;
 
     var turing_worker_u: std.Thread =
         try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{
@@ -257,7 +256,7 @@ pub fn main() !u8 {
         &turing_u_finalize,
         N_PRIMARY_WORKERS,
         &turing_u_done,
-        &turing_u_shutdown,
+        &turing_shutdown,
     });
     var turing_worker_v: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{
         &epoch,
@@ -266,7 +265,7 @@ pub fn main() !u8 {
         &turing_v_finalize,
         N_PRIMARY_WORKERS,
         &turing_v_done,
-        &turing_v_shutdown,
+        &turing_shutdown,
     });
     var primary_worker_start = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** N_PRIMARY_WORKERS;
     var primary_worker_done = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** N_PRIMARY_WORKERS;
@@ -360,8 +359,6 @@ pub fn main() !u8 {
             main_c.umbrary_update(epoch * 22_222);
         }
 
-        _ = main_c.gettimeofday(&time_fio_stop, null);
-
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
@@ -392,6 +389,8 @@ pub fn main() !u8 {
 
         turing_u_done.wait();
         turing_v_done.wait();
+
+        _ = main_c.gettimeofday(&time_fio_stop, null);
 
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
@@ -516,8 +515,7 @@ pub fn main() !u8 {
         worker.join();
     }
 
-    turing_u_shutdown = true;
-    turing_v_shutdown = true;
+    turing_shutdown = true;
 
     turing_u_finalize.post();
     turing_v_finalize.post();
@@ -616,16 +614,16 @@ fn primary_computation_worker(
     }
 }
 
-const scales_to_update =
+const update_scales =
     if (STRICT_EXECUTION_ORDERING)
-    [_]u8{0xff} ** constants.MAX_TURING_SCALES
+    [constants.MAX_TURING_SCALES][constants.MAX_TURING_SCALES]u8{[_]bool{true} ** constants.MAX_TURING_SCALES} ** constants.MAX_TURING_SCALES
 else
-    [constants.MAX_TURING_SCALES]u8{
-        0b11000,
-        0b00110,
-        0b10001,
-        0b01100,
-        0b00011,
+    [constants.MAX_TURING_SCALES][constants.MAX_TURING_SCALES]bool{
+        [_]bool{ true, true, false, false, false },
+        [_]bool{ false, false, true, true, false },
+        [_]bool{ true, false, false, false, true },
+        [_]bool{ false, true, true, false, false },
+        [_]bool{ false, false, false, true, true },
     }
     //[constants.MAX_TURING_SCALES]u8{0b10000,0b01000,0b00100,0b00010,0b00001,}
     ;
@@ -638,12 +636,38 @@ fn turing_computation_worker(
     finalize_waits: u8,
     done: *std.Thread.Semaphore,
     shutdown: *bool,
-) void {
+) !void {
+    var subworker_start = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** constants.MAX_TURING_SCALES;
+    var subworker_done = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** constants.MAX_TURING_SCALES;
+    var subworkers = init: {
+        var xs: [constants.MAX_TURING_SCALES]std.Thread = undefined;
+        for (subworker_start) |_, scale| {
+            xs[scale] = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_subworker, .{
+                @intCast(u8, scale),
+                turing_v,
+                &subworker_start[scale],
+                &subworker_done[scale],
+                shutdown,
+            });
+        }
+        break :init xs;
+    };
+
     while (!shutdown.*) {
         start.*.wait();
+        var epoch_tmp: usize = @intCast(usize, @mod(epoch.*, constants.MAX_TURING_SCALES));
 
-        // TODO this can be broken across scales and parallelized further
-        main_c.compute_turing_all(@ptrCast([*c]main_c.turing_vector_t, turing_v), scales_to_update[@intCast(usize, @mod(epoch.*, constants.MAX_TURING_SCALES))]);
+        for (update_scales[epoch_tmp]) |update_scale, scale| {
+            if (update_scale) {
+                subworker_start[scale].post();
+            }
+        }
+
+        for (update_scales[epoch_tmp]) |update_scale, scale| {
+            if (update_scale) {
+                subworker_done[scale].wait();
+            }
+        }
 
         var i: u8 = 0;
         while (i < finalize_waits) : (i += 1) {
@@ -662,6 +686,29 @@ fn turing_computation_worker(
                 @intToFloat(f64, @mod(epoch.*, 1_000)) / (1_000.0),
             );
         }
+
+        done.*.post();
+    } else {
+        for (subworker_start) |*sem| {
+            sem.*.post();
+        }
+        for (subworkers) |*subworker| {
+            subworker.join();
+        }
+    }
+}
+
+fn turing_computation_subworker(
+    scale: u8,
+    turing_v: *[ROWS * COLS]main_c.turing_vector_t,
+    start: *std.Thread.Semaphore,
+    done: *std.Thread.Semaphore,
+    shutdown: *bool,
+) void {
+    while (!shutdown.*) {
+        start.*.wait();
+
+        main_c.compute_turing_scale(@ptrCast([*c]main_c.turing_vector_t, turing_v), scale);
 
         done.*.post();
     }
