@@ -947,7 +947,7 @@ int display_flush(int epoch) {
             cairo_surface_flush(cairo_x_surface);
             XFlush(cairo_x_display);
         #elif defined OUTPUT_CAIRO_VIDEO_FRAMES /* OUTPUT_CAIRO_FULLSCREEN */
-            if (1 || epoch % WILDFIRE_SPEEDUP == 0) {
+            if (1 || (epoch % WILDFIRE_SPEEDUP == 0)) {
                 
                 cairo_text_extents_t te;
                 cairo_set_source_rgb (cairo_video_cr, 0xff, 0xff, 0xff);

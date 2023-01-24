@@ -31,8 +31,8 @@
 // physical dimensions
 //  #define PETALS_ACTIVE
 
-#define FLOOR_COLS 48
-#define FLOOR_ROWS 48
+#define FLOOR_COLS 96
+#define FLOOR_ROWS 96
 
 #define FLOOR_COLS_SHOWN FLOOR_COLS
 #define FLOOR_ROWS_SHOWN FLOOR_ROWS
@@ -136,7 +136,7 @@
 #define SECONDARY_TRANSITION_TICKS 300
 #define RAND_SECONDARY_TRANSITION  ( rand() % (ROWS * COLS) == 0 )
 #define HIBERNATION_TICKS          70000 // 70000 ticks ~ 103 seconds
-#define INITIALIZATION_EPOCHS      ( 1 * WILDFIRE_SPEEDUP ) // run this many epochs on startup
+#define INITIALIZATION_EPOCHS      3 // run this many epochs on startup
 #define PRESSURE_DELAY_EPOCHS      30
 #define PRESSURE_RADIUS_TICKS      150//76
 #define RAINBOW_TONE_EPOCHS        1200

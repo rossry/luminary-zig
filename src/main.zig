@@ -4,6 +4,8 @@ var r = std.rand.DefaultPrng.init(2);
 
 const constants = @import("constants.zig");
 
+const STRICT_EXECUTION_ORDERING: bool = constants.STRICT_EXECUTION_ORDERING;
+
 const SPECTRARY: bool = constants.SPECTRARY;
 const UMBRARY: bool = constants.UMBRARY;
 
@@ -248,8 +250,10 @@ pub fn main() !u8 {
     var turing_worker_u: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_u, &turing_u_start, &turing_u_finalize, &turing_u_done, &turing_u_shutdown });
     var turing_worker_v: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{ &epoch, &turing_v, &turing_v_start, &turing_v_finalize, &turing_v_done, &turing_v_shutdown });
 
-    turing_u_start.post();
-    turing_v_start.post();
+    if (!STRICT_EXECUTION_ORDERING) {
+        turing_u_start.post();
+        turing_v_start.post();
+    }
 
     // main loop
     while (epoch <= epoch_limit or epoch_limit <= 0) : (epoch += 1) {
@@ -301,8 +305,10 @@ pub fn main() !u8 {
             }
         }
 
-        turing_u_finalize.post();
-        turing_v_finalize.post();
+        if (!STRICT_EXECUTION_ORDERING) {
+            turing_u_finalize.post();
+            turing_v_finalize.post();
+        }
 
         main_c.c_compute_global_pattern_driver(
             epoch,
@@ -345,6 +351,14 @@ pub fn main() !u8 {
             );
         }
 
+        if (STRICT_EXECUTION_ORDERING) {
+            turing_u_start.post();
+            turing_v_start.post();
+
+            turing_u_finalize.post();
+            turing_v_finalize.post();
+        }
+
         _ = main_c.gettimeofday(&fio_stop, null);
         turing_u_done.wait();
         turing_v_done.wait();
@@ -361,8 +375,10 @@ pub fn main() !u8 {
             );
         }
 
-        turing_u_start.post();
-        turing_v_start.post();
+        if (!STRICT_EXECUTION_ORDERING) {
+            turing_u_start.post();
+            turing_v_start.post();
+        }
 
         if (UMBRARY and umbrary_active) {
             for (CELLS) |_, xy| {
@@ -471,6 +487,20 @@ pub fn main() !u8 {
     return 0;
 }
 
+const scales_to_update =
+    if (STRICT_EXECUTION_ORDERING)
+    [_]u8{0xff} ** constants.MAX_TURING_SCALES
+else
+    [constants.MAX_TURING_SCALES]u8{
+        0b11000,
+        0b00110,
+        0b10001,
+        0b01100,
+        0b00011,
+    }
+    //[constants.MAX_TURING_SCALES]u8{0b10000,0b01000,0b00100,0b00010,0b00001,}
+    ;
+
 // TODO move worker-thread logic out to separate files
 fn turing_computation_worker(
     epoch: *c_int,
@@ -484,7 +514,8 @@ fn turing_computation_worker(
         start.*.wait();
 
         // TODO this can be broken across scales and parallelized further
-        main_c.compute_turing_all(@ptrCast([*c]main_c.turing_vector_t, turing_v));
+        // TODO and/or we can improve performance by updating <all channels per loop
+        main_c.compute_turing_all(@ptrCast([*c]main_c.turing_vector_t, turing_v), scales_to_update[@intCast(usize, @mod(epoch.*, constants.MAX_TURING_SCALES))]);
 
         finalize.*.wait();
 

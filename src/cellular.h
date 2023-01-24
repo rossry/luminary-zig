@@ -1,6 +1,8 @@
 #ifndef CELLULAR_H
 #define CELLULAR_H
 
+#include <stdint.h>
+
 typedef struct turing_reagent {
     double activ;
     double inhib;
@@ -75,7 +77,8 @@ void compute_decay(
 );
 
 void compute_turing_all(
-    turing_vector_t* reagents
+    turing_vector_t* reagents,
+    uint8_t scales_to_update
 );
 
 void apply_turing(

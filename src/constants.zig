@@ -1,3 +1,9 @@
+pub const STRICT_EXECUTION_ORDERING: bool = false;
+
+// if you change these, make corresponding changes to cellular.h
+
+pub const MAX_TURING_SCALES: u16 = 5;
+
 // if you change these, make corresponding changes to constants.h
 
 const std = @import("std");
@@ -20,8 +26,8 @@ pub const UMBRARY: bool = false;
 pub const PETALS_ACTIVE: bool = false;
 
 //TODO: to be continued...
-pub const FLOOR_COLS: u16 = 48;
-pub const FLOOR_ROWS: u16 = 48;
+pub const FLOOR_COLS: u16 = 96;
+pub const FLOOR_ROWS: u16 = 96;
 
 pub const FLOOR_COLS_SHOWN: u16 = FLOOR_COLS;
 pub const FLOOR_ROWS_SHOWN: u16 = FLOOR_ROWS;
