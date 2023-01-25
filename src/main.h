@@ -32,7 +32,6 @@ void c_compute_cyclic_evolution_cell(
     int pressure_orth_next[], // only accesses [xy]
     int pressure_diag[], // read-only
     int pressure_diag_next[], // only accesses [xy]
-    double excitement[], // only accesses [xy]
     int waves_orth[], // read-only
     int waves_orth_next[], // only accesses [xy]
     int waves_diag[], // read-only

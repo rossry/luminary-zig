@@ -1,5 +1,7 @@
 pub const STRICT_EXECUTION_ORDERING: bool = false;
 
+pub const DRIVE_GLOBAL_PATTERN: bool = false;
+
 // if you change these, make corresponding changes to cellular.h
 
 pub const MAX_TURING_SCALES: u16 = 5;

@@ -142,8 +142,6 @@ pub fn main() !u8 {
     var pressure_orth_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
     var pressure_diag_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
 
-    var excitement = [_]f64{0.0} ** (ROWS * COLS);
-
     //// needed to drive waves_(orth|diag)'s top row
     //// hand-tuned to radiate from a center 84 cells above the midpoint of the top side
     //int waves_base[] = WAVES_BASE_ARRAY;
@@ -292,7 +290,6 @@ pub fn main() !u8 {
                 &pressure_self,
                 &pressure_orth_,
                 &pressure_diag_,
-                &excitement,
                 &waves_orth_,
                 &waves_diag_,
                 &turing_u,
@@ -334,20 +331,22 @@ pub fn main() !u8 {
             // turing_v_finalize.post();
         }
 
-        main_c.c_compute_global_pattern_driver(
-            epoch,
-            scene,
-            &control_directive_0_[now],
-            &control_directive_0_[next],
-            &control_directive_1_[now],
-            &control_directive_1_[next],
-            &control_orth_[now],
-            &control_orth_[next],
-            &waves_orth_[now],
-            &waves_orth_[next],
-            &waves_diag_[now],
-            &waves_diag_[next],
-        );
+        if (constants.DRIVE_GLOBAL_PATTERN) {
+            main_c.c_compute_global_pattern_driver(
+                epoch,
+                scene,
+                &control_directive_0_[now],
+                &control_directive_0_[next],
+                &control_directive_1_[now],
+                &control_directive_1_[next],
+                &control_orth_[now],
+                &control_orth_[next],
+                &waves_orth_[now],
+                &waves_orth_[next],
+                &waves_diag_[now],
+                &waves_diag_[next],
+            );
+        }
 
         _ = main_c.gettimeofday(&time_fio_start, null);
 
@@ -358,6 +357,8 @@ pub fn main() !u8 {
         if (UMBRARY and umbrary_active) {
             main_c.umbrary_update(epoch * 22_222);
         }
+
+        _ = main_c.gettimeofday(&time_fio_stop, null);
 
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
@@ -389,8 +390,6 @@ pub fn main() !u8 {
 
         turing_u_done.wait();
         turing_v_done.wait();
-
-        _ = main_c.gettimeofday(&time_fio_stop, null);
 
         for (CELLS) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
@@ -549,7 +548,6 @@ fn primary_computation_worker(
     pressure_self: *[ROWS * COLS]c_int,
     pressure_orth_: *[2][ROWS * COLS]c_int,
     pressure_diag_: *[2][ROWS * COLS]c_int,
-    excitement: *[ROWS * COLS]f64,
     waves_orth_: *[2][ROWS * COLS]c_int,
     waves_diag_: *[2][ROWS * COLS]c_int,
     turing_u: *[ROWS * COLS]main_c.turing_vector_t,
@@ -597,7 +595,6 @@ fn primary_computation_worker(
                     &pressure_orth_[next.*], // only accesses [xy]
                     &pressure_diag_[now.*], // read-only
                     &pressure_diag_[next.*], // only accesses [xy]
-                    excitement, // only accesses [xy]
                     &waves_orth_[now.*], // read-only
                     &waves_orth_[next.*], // only accesses [xy]
                     &waves_diag_[now.*], // read-only

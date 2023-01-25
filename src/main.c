@@ -67,7 +67,6 @@ void c_compute_cyclic_evolution_cell(
     int pressure_orth_next[], // only accesses [xy]
     int pressure_diag[], // read-only
     int pressure_diag_next[], // only accesses [xy]
-    double excitement[], // only accesses [xy]
     int waves_orth[], // read-only
     int waves_orth_next[], // only accesses [xy]
     int waves_diag[], // read-only
@@ -147,18 +146,12 @@ void c_compute_cyclic_evolution_cell(
         }
     }
     
-    excitement[xy] += 1.0 / 3.0;
-    excitement[xy] += pressure_orth[xy] * 2 / 3 / PRESSURE_RADIUS_TICKS;
-    
     if (
         1
         && (epoch) % WILDFIRE_SPEEDUP == 0
         #ifdef UMBRARY
             && !umbrary_active
         #endif /* UMBRARY */
-        && ( excitement[xy] > 1.0
-             || ((waves_orth_next[xy] / 17) % 800) > 800 - 1 - 6
-           )
     ) {
         // evolve rainbow_0
         rainbow_0_next[xy] = compute_cyclic(rainbow_0, impatience_0, xy);
@@ -211,11 +204,6 @@ void c_compute_cyclic_evolution_cell(
                 }
                 rainbow_0_next[xy] = rainbow_0[xy];
             }
-        }
-        
-        excitement[xy] -= 1.0;
-        if (excitement[xy] > 1.0) {
-            excitement[xy] = 1.0;
         }
     }
 }
