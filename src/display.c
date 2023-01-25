@@ -24,13 +24,17 @@ int petal_mapping[] = PETAL_MAPPING;
 #endif /* OUTPUT_GIF */
 
 uint8_t rgb_palette[256 * 3];
+double cairo_r[256];
+double cairo_g[256];
+double cairo_b[256];
 
 #ifdef OUTPUT_CAIRO
-// cairo
-cairo_surface_t *cairo_blur;
-cairo_t *cairo_blur_cr;
-
-#ifdef OUTPUT_CAIRO
+    #define CAIRO_SURFACE_WIDTH  (14 + COLS * CAIRO_ZOOM)
+    #define CAIRO_SURFACE_HEIGHT (14 + ROWS * CAIRO_ZOOM)
+    
+    cairo_surface_t *cairo_blur;
+    cairo_t *cairo_blur_cr;
+    
     cairo_surface_t *cairo_surface;
     cairo_t *cairo_cr;
 
@@ -50,16 +54,15 @@ cairo_t *cairo_blur_cr;
         int cairo_video_started_yet;
         int cairo_video_written_yet;
     #endif /* OUTPUT_CAIRO_VIDEO_FRAMES */
-#endif /* OUTPUT_CAIRO */
-
-void cairo_set_source_luminary(cairo_t* cr, int id) {
-    cairo_set_source_rgb(
-        cr,
-        (uint8_t)rgb_palette[id * 3 + 0] / 255.0,
-        (uint8_t)rgb_palette[id * 3 + 1] / 255.0,
-        (uint8_t)rgb_palette[id * 3 + 2] / 255.0
-    );
-}
+    
+    void cairo_set_source_luminary(cairo_t* cr, int id) {
+        cairo_set_source_rgb(
+            cr,
+            cairo_r[id],
+            cairo_g[id],
+            cairo_b[id]
+        );
+    }
 #endif /* OUTPUT_CAIRO */
 
 void print_sacn_message(char *message, int y) {
@@ -76,6 +79,12 @@ void display_init_color(int id, int xterm, uint8_t r, uint8_t g, uint8_t b) {
     rgb_palette[id * 3 + 1] = g;
     rgb_palette[id * 3 + 2] = b;
     //#endif /* OUTPUT_GIF */
+    
+    #ifdef OUTPUT_CAIRO
+        cairo_r[id] = r / 255.0;
+        cairo_g[id] = g / 255.0;
+        cairo_b[id] = b / 255.0;
+    #endif /* OUTPUT_CAIRO */
 }
 
 void display_init_extra_color(int id, int xterm_fg, int xterm_bg, uint8_t r, uint8_t g, uint8_t b) {
@@ -88,6 +97,12 @@ void display_init_extra_color(int id, int xterm_fg, int xterm_bg, uint8_t r, uin
     rgb_palette[id * 3 + 1] = g;
     rgb_palette[id * 3 + 2] = b;
     //#endif /* OUTPUT_GIF */
+    
+    #ifdef OUTPUT_CAIRO
+        cairo_r[id] = r / 255.0;
+        cairo_g[id] = g / 255.0;
+        cairo_b[id] = b / 255.0;
+    #endif /* OUTPUT_CAIRO */
 }
 
 void display_init() {
@@ -276,7 +291,7 @@ void display_init() {
             );
         cairo_cr = cairo_create(cairo_surface);
         cairo_set_source_rgb(cairo_cr, 0x00, 0x00, 0x00);
-        cairo_rectangle(cairo_cr, 0, 0, 14 + COLS * CAIRO_ZOOM, 14 + ROWS * CAIRO_ZOOM);
+        cairo_rectangle(cairo_cr, 0, 0, CAIRO_SURFACE_WIDTH, CAIRO_SURFACE_HEIGHT);
         cairo_fill(cairo_cr);
         
         #ifdef OUTPUT_CAIRO_FULLSCREEN
@@ -315,20 +330,16 @@ void display_init() {
                     ROWS * CAIRO_ZOOM
                 );
             cairo_x_cr = cairo_create(cairo_x_surface);
-
+            
             cairo_set_source_rgb(cairo_x_cr, 0x00, 0x00, 0x00);
-            cairo_rectangle(cairo_x_cr, 0, 0, 14 + COLS * CAIRO_ZOOM, 14 + ROWS * CAIRO_ZOOM);
+            cairo_rectangle(cairo_x_cr, 0, 0, CAIRO_SURFACE_WIDTH, CAIRO_SURFACE_HEIGHT);
             cairo_fill(cairo_x_cr);
         //#else /* OUTPUT_CAIRO_FULLSCREEN */
         //    cairo_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, COLS * CAIRO_ZOOM, ROWS * CAIRO_ZOOM);
         #endif /* OUTPUT_CAIRO_FULLSCREEN */
         //cairo_cr = cairo_create(cairo_surface);
         #ifdef OUTPUT_CAIRO_VIDEO_FRAMES
-            #ifdef OUTPUT_CAIRO_IAMAI
-                cairo_video_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 5760, 3240);
-            #else /* OUTPUT_CAIRO_IAMAI */
-                cairo_video_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 14 + COLS * CAIRO_ZOOM, 14 + ROWS * CAIRO_ZOOM);
-            #endif /* OUTPUT_CAIRO_IAMAI */
+            cairo_video_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, CAIRO_SURFACE_WIDTH, CAIRO_SURFACE_HEIGHT);
             cairo_video_cr = cairo_create(cairo_video_surface);
             
             #ifdef OUTPUT_CAIRO_IAMAI
@@ -369,7 +380,7 @@ void display_init() {
                 cairo_show_text (cairo_video_cr, "audio: \"Behind Our Efforts, Let There Be Found Our Efforts\", (c) 2018 LG17, licensed CC BY 4.0");
             #else /* OUTPUT_CAIRO_IAMAI */
                 cairo_set_source_rgb(cairo_video_cr, 0x00, 0x00, 0x00);
-                cairo_rectangle(cairo_video_cr, 0, 0, 14 + COLS * CAIRO_ZOOM, 14 + ROWS * CAIRO_ZOOM);
+                cairo_rectangle(cairo_video_cr, 0, 0, CAIRO_SURFACE_WIDTH, CAIRO_SURFACE_HEIGHT);
                 cairo_fill(cairo_video_cr);
             #endif /* OUTPUT_CAIRO_IAMAI */
 
@@ -639,8 +650,10 @@ void display_color(int xy, int color, int state_color) {
         #endif /* DISPLAY_PETALS_MODE */
     ) {
         if (display_current[xy] != state_color
-            || rand() % 100 == 100
-            || xy == COLS * (ROWS-1) + FLOOR_COLS - 1
+            //|| rand() % 100 == 0
+            #ifdef OUTPUT_NCURSES
+                || xy == COLS * (ROWS-1) + FLOOR_COLS - 1
+            #endif /* OUTPUT_NCURSES */
             || xy < EXTRA_COLORS
         ) {
             #ifdef OUTPUT_NCURSES
@@ -693,36 +706,22 @@ void display_color(int xy, int color, int state_color) {
             
             
             #ifdef OUTPUT_CAIRO
-                cairo_set_source_luminary(cairo_cr, color);
-                cairo_mask_surface(cairo_cr, cairo_blur, -CAIRO_BLUR_WIDTH + x * CAIRO_ZOOM, -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
+                #ifdef CAIRO_SNAPSHOT_EPOCH
+                    cairo_set_source_luminary(cairo_cr, color);
+                    cairo_mask_surface(cairo_cr, cairo_blur, -CAIRO_BLUR_WIDTH + x * CAIRO_ZOOM, -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
+                #endif /* CAIRO_SNAPSHOT_EPOCH */
             #endif /* OUTPUT_CAIRO */
             
             #ifdef OUTPUT_CAIRO_FULLSCREEN
             //    cairo_set_source_luminary(cairo_x_cr, color);
+            //    // TODO cairo_mask_surface() is the hot part; best idea I have right now is to break the canvas four ways and paint each of them in separate threads
             //    cairo_mask_surface(cairo_x_cr, cairo_blur, -CAIRO_BLUR_WIDTH + x * CAIRO_ZOOM, -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
             #endif /* OUTPUT_CAIRO_FULLSCREEN */
             
             #ifdef OUTPUT_CAIRO_VIDEO_FRAMES
                 cairo_set_source_luminary(cairo_video_cr, color);
-                #ifdef OUTPUT_CAIRO_IAMAI
-                    if (x < COLS/2) {
-                        cairo_mask_surface(cairo_video_cr, cairo_blur, -CAIRO_BLUR_WIDTH + x * CAIRO_ZOOM, 454 -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
-                    } else {
-                        cairo_mask_surface(cairo_video_cr, cairo_blur, -CAIRO_BLUR_WIDTH + (x-COLS/2) * CAIRO_ZOOM, 1816 -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
-                    }
-                    if (x == COLS -1) {
-                        cairo_mask_surface(cairo_video_cr, cairo_blur, -CAIRO_BLUR_WIDTH + (-1) * CAIRO_ZOOM, 454 -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
-                    } else if (x == COLS/2) {
-                        cairo_mask_surface(cairo_video_cr, cairo_blur, -CAIRO_BLUR_WIDTH + (COLS/2) * CAIRO_ZOOM, 454 -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
-                    } else if (x == COLS/2 - 1) {
-                        cairo_mask_surface(cairo_video_cr, cairo_blur, -CAIRO_BLUR_WIDTH + (-1) * CAIRO_ZOOM, 1816 -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
-                    } else if (x == 0) {
-                        cairo_mask_surface(cairo_video_cr, cairo_blur, -CAIRO_BLUR_WIDTH + ((COLS)-COLS/2) * CAIRO_ZOOM, 1816 -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
-                    }
-                #else
-                    //cairo_mask_surface(cairo_video_cr, cairo_blur, 14 -CAIRO_BLUR_WIDTH + x * CAIRO_ZOOM, 14 -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
-                    cairo_mask_surface(cairo_video_cr, cairo_blur, 7 -CAIRO_BLUR_WIDTH + x * CAIRO_ZOOM, 7 -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
-                #endif
+                // TODO cairo_mask_surface() is the hot part; best idea I have right now is to break the canvas four ways and paint each of them in separate threads
+                cairo_mask_surface(cairo_video_cr, cairo_blur, 7 -CAIRO_BLUR_WIDTH + x * CAIRO_ZOOM, 7 -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
                 
                 #ifdef CAIRO_CELL_LABELS
                     char s[4];
@@ -770,7 +769,9 @@ void display_light(int id, int color) {
     // CR rrheingans-yoo: set light id to color color
 }
 
-int display_flush(int epoch) {
+// to flush, call display_flush_synchronous() and display_flush_asynchronous() on the same **cairo_t (which will be overwritten)
+// you must block on _synchronous(), but can then call _asynchronous() in a detached thread at your leisure 
+int display_flush_synchronous(int epoch, cairo_t **cr_for_async) {
     #ifdef OUTPUT_NCURSES
         // ncurses flush
         refresh();
@@ -940,76 +941,76 @@ int display_flush(int epoch) {
     #ifdef OUTPUT_CAIRO
         #ifdef OUTPUT_CAIRO_FULLSCREEN
             cairo_set_source_surface (cairo_x_cr, cairo_surface, 0, 0);
-            //cairo_rectangle (cairo_x_cr, 0, 0, 14 + COLS * CAIRO_ZOOM, 14 + ROWS * CAIRO_ZOOM);
-            //cairo_rectangle(cairo_x_cr, 0, 0, 50, 50);
-            //cairo_fill (cairo_x_cr);
             cairo_paint_with_alpha(cairo_x_cr,CAIRO_PAINT_ALPHA);
             cairo_surface_flush(cairo_x_surface);
             XFlush(cairo_x_display);
         #elif defined OUTPUT_CAIRO_VIDEO_FRAMES /* OUTPUT_CAIRO_FULLSCREEN */
-            if (1 || (epoch % WILDFIRE_SPEEDUP == 0)) {
-                
-                cairo_text_extents_t te;
-                cairo_set_source_rgb (cairo_video_cr, 0xff, 0xff, 0xff);
-                cairo_select_font_face (
-                      cairo_video_cr
-                    , "sans-serif"
-                    , CAIRO_FONT_SLANT_NORMAL
-                    //, CAIRO_FONT_WEIGHT_BOLD
-                    , CAIRO_FONT_WEIGHT_NORMAL
-                    );
-                cairo_set_font_size (cairo_video_cr, 20.0);
-                cairo_text_extents (cairo_video_cr, "Lorem ipsum", &te);
-                
-                /*
-                cairo_move_to (cairo_video_cr,
-                    100 - te.x_bearing,
-                    40 - te.y_bearing
+            cairo_text_extents_t te;
+            cairo_set_source_rgb (cairo_video_cr, 0xff, 0xff, 0xff);
+            cairo_select_font_face (
+                  cairo_video_cr
+                , "sans-serif"
+                , CAIRO_FONT_SLANT_NORMAL
+                //, CAIRO_FONT_WEIGHT_BOLD
+                , CAIRO_FONT_WEIGHT_NORMAL
                 );
-                cairo_show_text (cairo_video_cr, "pre-print draft -- Spins Madly On -- pre-print draft");
-                
-                cairo_move_to (cairo_video_cr,
-                    100 - te.x_bearing,
-                    60 - te.y_bearing
-                );
-                cairo_show_text (cairo_video_cr, "(c) 2018 Ross Rheingans-Yoo");
-                
-                cairo_move_to (cairo_video_cr,
-                    100 - te.x_bearing,
-                    80 - te.y_bearing
-                );
-                cairo_show_text (cairo_video_cr, "not publicly releasable / all rights reserved");
-                */
-                
-                char s[37];
-                //sprintf(s, "/tmp/luminary-360-b/img%08d.png", epoch);
-                //sprintf(s, "demo/thought_of_you/img%08d.png", epoch);
-                sprintf(s, "demo/f3-1a/img%08d.png", epoch);
+            cairo_set_font_size (cairo_video_cr, 20.0);
+            cairo_text_extents (cairo_video_cr, "Lorem ipsum", &te);
+            
+            /*
+            cairo_move_to (cairo_video_cr,
+                100 - te.x_bearing,
+                40 - te.y_bearing
+            );
+            cairo_show_text (cairo_video_cr, "pre-print draft -- Spins Madly On -- pre-print draft");
+            
+            cairo_move_to (cairo_video_cr,
+                100 - te.x_bearing,
+                60 - te.y_bearing
+            );
+            cairo_show_text (cairo_video_cr, "(c) 2018 Ross Rheingans-Yoo");
+            
+            cairo_move_to (cairo_video_cr,
+                100 - te.x_bearing,
+                80 - te.y_bearing
+            );
+            cairo_show_text (cairo_video_cr, "not publicly releasable / all rights reserved");
+            */
+            
+            // TODO reuse a pool of cairo objects instead of a new one per call
+            cairo_surface_t *tmp_cairo_video_surface;
+            cairo_t *tmp_cairo_video_cr;
+            tmp_cairo_video_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, CAIRO_SURFACE_WIDTH, CAIRO_SURFACE_HEIGHT);
+            tmp_cairo_video_cr = cairo_create(tmp_cairo_video_surface);
+            cairo_surface_destroy(tmp_cairo_video_surface); // this means to the surface at the same time as destroying the cairo_t
+        
+            cairo_set_source_surface (tmp_cairo_video_cr, cairo_video_surface, 0, 0);
+            cairo_paint(tmp_cairo_video_cr);
+            
+            char s[37];
+            sprintf(s, "demo/f3-1a/img%08d.png", epoch);
+            
+            #ifdef OUTPUT_CAIRO_VIDEO_FRAMES_DRYRUN
+                cairo_destroy(tmp_cairo_video_cr);
+                *cr_for_async = NULL;
+            #else /* OUTPUT_CAIRO_VIDEO_FRAMES_DRYRUN */
                 if (access( s, F_OK ) == -1) {
-                    /*
-                    for (int xy = 0; xy < ROWS * COLS; ++xy) {
-                        int x = xy % COLS;
-                        int y = xy / COLS;
-                        cairo_set_source_luminary(cairo_cr, display_current[xy]);
-                        cairo_mask_surface(cairo_cr, cairo_blur, 7 -CAIRO_BLUR_WIDTH + x * CAIRO_ZOOM, 7 -CAIRO_BLUR_WIDTH + y * CAIRO_ZOOM);
-                    }
-                    */
-                    
-                    if (1 || epoch == 90) {
-                        cairo_surface_write_to_png(cairo_video_surface, s);
-                    }
+                    *cr_for_async = tmp_cairo_video_cr;
                     
                     mvprintw(DIAGNOSTIC_ROWS+4, 1, "wrote cairo (%d frames)", epoch/*/WILDFIRE_SPEEDUP*/);
                     #ifdef CAIRO_PRINT_VERBOSE
                         printf("wrote cairo (%d frames)\n", epoch);
                     #endif /* CAIRO_PRINT_VERBOSE */
                 } else {
+                    cairo_destroy(tmp_cairo_video_cr);
+                    *cr_for_async = NULL;
+                    
                     mvprintw(DIAGNOSTIC_ROWS+4, 1, "skip cairo (%d frames)", epoch/*/WILDFIRE_SPEEDUP*/);
                     #ifdef CAIRO_PRINT_VERBOSE
                         printf("skip cairo (%d frames)\n", epoch);
                     #endif /* CAIRO_PRINT_VERBOSE */
                 }
-            }
+            #endif /* OUTPUT_CAIRO_VIDEO_FRAMES_DRYRUN */
         #elif defined CAIRO_SNAPSHOT_EPOCH
             if (epoch == CAIRO_SNAPSHOT_EPOCH) {
                 cairo_surface_t *cairo_shapshot_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, COLS * CAIRO_ZOOM, ROWS * CAIRO_ZOOM);
@@ -1024,7 +1025,6 @@ int display_flush(int epoch) {
                 
                 cairo_destroy(cairo_shapshot_cr);
                 cairo_surface_write_to_png(cairo_shapshot_surface, "demo/cairo.png");
-                cairo_surface_destroy(cairo_shapshot_surface);
                 
                 mvprintw(DIAGNOSTIC_ROWS+4, 1, "wrote cairo (%d frames)", epoch);
             }
@@ -1038,4 +1038,14 @@ int display_flush(int epoch) {
     int ret = n_dirty_pixels;
     n_dirty_pixels = 0;
     return ret;
+}
+
+void display_flush_asynchronous(int epoch, cairo_t *cr_from_sync) {
+    char s[37];
+    sprintf(s, "demo/f3-1a/img%08d.png", epoch);
+    
+    if (cr_from_sync != NULL) {
+        cairo_surface_write_to_png(cr_from_sync, s);
+        cairo_destroy(cr_from_sync);
+    }
 }

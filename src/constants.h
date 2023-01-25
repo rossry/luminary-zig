@@ -165,11 +165,12 @@
 #ifdef OUTPUT_CAIRO
     //#define OUTPUT_CAIRO_FULLSCREEN
     #define OUTPUT_CAIRO_VIDEO_FRAMES
+    //#define OUTPUT_CAIRO_VIDEO_FRAMES_DRYRUN
     #ifdef OUTPUT_NCURSES
     #else /* OUTPUT_NCURSES */
         #define CAIRO_PRINT_VERBOSE
     #endif /* OUTPUT_NCURSES */
-    #define CAIRO_SNAPSHOT_EPOCH 1323
+    //#define CAIRO_SNAPSHOT_EPOCH 1323
     
     #define CAIRO_BLUR
     #define CAIRO_PAINT_ALPHA 0.1

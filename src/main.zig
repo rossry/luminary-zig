@@ -454,7 +454,7 @@ pub fn main() !u8 {
         }
 
         var print_modulus = 5 * @floatToInt(c_int, @round(0.2 / (total_avg / 1_000_000)));
-        if (epoch > constants.INITIALIZATION_EPOCHS and (@mod(epoch, print_modulus) == 0 or constants.cairo.VIDEO_FRAMES)) {
+        if (epoch > constants.INITIALIZATION_EPOCHS and (@mod(epoch, print_modulus) == 0 or (constants.cairo.VIDEO_FRAMES and !constants.cairo.VIDEO_FRAMES_DRYRUN))) {
             if (constants.cairo.PRINT_VERBOSE) {
                 std.debug.print("compute:{d:5.1}ms  ", .{(compute_avg - fio_avg) / 1_000.0});
                 std.debug.print("file io:{d:5.1}ms  ", .{fio_avg / 1_000});
@@ -463,7 +463,7 @@ pub fn main() !u8 {
                 std.debug.print("wait:{d:5.1}ms  ", .{wait_avg / 1_000});
                 std.debug.print("sleep:{d:5.1}ms  ", .{sleep_avg / 1_000});
                 std.debug.print("Hz:{d:5.1}/{d}(/{d})  ", .{ 1.0 / (total_avg / 1_000_000), constants.DISPLAY_FLUSH_EPOCHS, constants.WILDFIRE_SPEEDUP });
-                if (!constants.cairo.VIDEO_FRAMES) {
+                if (!constants.cairo.VIDEO_FRAMES or constants.cairo.VIDEO_FRAMES_DRYRUN) {
                     std.debug.print("epoch: {d}\n", .{epoch});
                 }
             }

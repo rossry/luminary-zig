@@ -154,8 +154,9 @@ pub const OUTPUT_CAIRO: bool = true;
 pub const cairo = if (OUTPUT_CAIRO) struct {
     pub const FULLSCREEN: bool = false;
     pub const VIDEO_FRAMES: bool = true;
+    pub const VIDEO_FRAMES_DRYRUN: bool = false;
     pub const PRINT_VERBOSE: bool = !OUTPUT_NCURSES and true;
-    pub const SNAPSHOT_EPOCH: u16 = 1_323;
+    pub const SNAPSHOT_EPOCH: u16 = 0;
 
     pub const BLUR: bool = true;
     pub const PAINT_ALPHA: u16 = 0.1;

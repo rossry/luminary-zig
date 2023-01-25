@@ -165,6 +165,7 @@ void c_apply_umbrary_cell(
     #endif /* UMBRARY */
 }
 
+// TODO multithread this
 void c_draw_and_io(
     int spectrary_active,
     int umbrary_active,
@@ -332,7 +333,9 @@ void c_display_flush(
     // begin flush display
     if (epoch > INITIALIZATION_EPOCHS) {
         if ((epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
-            *n_dirty_pixels = display_flush(epoch);
+            cairo_t *cr = NULL;
+            *n_dirty_pixels = display_flush_synchronous(epoch, &cr);
+            display_flush_asynchronous(epoch, cr);
             *n_dirty_pixels_avg = 0.99*(*n_dirty_pixels_avg) + 0.01*(*n_dirty_pixels);
         }
     } else {
