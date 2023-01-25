@@ -6,40 +6,6 @@ typedef struct timeval timeval_t;
 void c_init();
 void c_exit();
 
-// only mutates arrays at index [xy]
-// only reads from mutable arrays at index [xy]
-// therefore, thread-safe to run on cells in parallel
-void c_compute_cyclic_evolution_cell(
-    int xy,
-    int epoch,
-    int scratch[],
-    int control_directive_0[], // read-only
-    int control_directive_0_next[], // only accesses [xy]
-    int control_directive_1[], // read-only
-    int control_directive_1_next[], // only accesses [xy]
-    int control_orth[], // read-only
-    int control_orth_next[], // only accesses [xy]
-    int control_diag[], // read-only
-    int control_diag_next[], // only accesses [xy]
-    int rainbow_0[], // read-only
-    int rainbow_0_next[], // only accesses [xy]
-    int impatience_0[], // only accesses [xy]
-    int rainbow_1[], // read-only
-    int rainbow_1_next[], // only accesses [xy]
-    int impatience_1[], // only accesses [xy]
-    int pressure_self[], // read-only
-    int pressure_orth[], // read-only
-    int pressure_orth_next[], // only accesses [xy]
-    int pressure_diag[], // read-only
-    int pressure_diag_next[], // only accesses [xy]
-    int waves_orth[], // read-only
-    int waves_orth_next[], // only accesses [xy]
-    int waves_diag[], // read-only
-    int waves_diag_next[], // only accesses [xy]
-    turing_vector_t turing_u[], // only accesses [xy]
-    turing_vector_t turing_v[] // only accesses [xy]
-);
-
 void c_compute_global_pattern_driver(
     int epoch,
     int scene,

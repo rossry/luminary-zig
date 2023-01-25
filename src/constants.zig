@@ -1,5 +1,8 @@
 pub const STRICT_EXECUTION_ORDERING: bool = false;
 
+pub const USE_CONTROL_DIRECTIVE: bool = false;
+pub const USE_WAVES: bool = false;
+pub const USE_PRESSURE: bool = false;
 pub const DRIVE_GLOBAL_PATTERN: bool = false;
 
 // if you change these, make corresponding changes to cellular.h
@@ -123,7 +126,7 @@ pub const THROTTLE_LOOP_NSEC: u24 = if (THROTTLE_LOOP) THROTTLE_LOOP_USEC * 1_00
 pub const TRANSITION_TICKS: u16 = 400;
 pub const SECONDARY_TRANSITION_TICKS: u16 = 300;
 //pub fn RAND_SECONDARY_TRANSITION() callconv(.Inline) u16 { return rand() % (ROWS * COLS) == 0; }
-pub const HIBERNATION_TICKS: u16 = 70_000; // 70000 ticks ~ 103 seconds
+pub const HIBERNATION_TICKS: u16 = 60_000; // 70000 ticks ~ 103 seconds
 pub const INITIALIZATION_EPOCHS: u16 = 1 * WILDFIRE_SPEEDUP; // run this many epochs on startup
 pub const PRESSURE_DELAY_EPOCHS: u16 = 30;
 pub const PRESSURE_RADIUS_TICKS: u16 = 150;

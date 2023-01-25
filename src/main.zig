@@ -277,6 +277,7 @@ pub fn main() !u8 {
                 N_PRIMARY_WORKERS,
                 &now,
                 &next,
+                umbrary_active,
                 &epoch,
                 &scratch,
                 &control_directive_0_,
@@ -452,7 +453,8 @@ pub fn main() !u8 {
             }
         }
 
-        if (@mod(epoch, 20) == 0) {
+        var print_modulus = 5 * @floatToInt(c_int, @round(0.2 / (total_avg / 1_000_000)));
+        if (epoch > constants.INITIALIZATION_EPOCHS and (@mod(epoch, print_modulus) == 0 or constants.cairo.VIDEO_FRAMES)) {
             if (constants.cairo.PRINT_VERBOSE) {
                 std.debug.print("compute:{d:5.1}ms  ", .{(compute_avg - fio_avg) / 1_000.0});
                 std.debug.print("file io:{d:5.1}ms  ", .{fio_avg / 1_000});
@@ -541,6 +543,7 @@ fn primary_computation_worker(
     xy_increment: u16,
     now: *u8,
     next: *u8,
+    umbrary_active: bool,
     epoch: *c_int,
     scratch: *[ROWS * COLS]c_int,
     control_directive_0_: *[2][ROWS * COLS]c_int,
@@ -577,39 +580,9 @@ fn primary_computation_worker(
             var y = xy / COLS;
 
             if (!constants.PETALS_ACTIVE or y < constants.PETAL_ROWS or x < constants.FLOOR_COLS) {
-                // thread-safe to run on cells in parallel (see notes in C definition)
-                // main_c.c_compute_cyclic_evolution_cell(
-                //     @intCast(c_int, xy),
-                //     epoch.*,
-                //     scratch,
-                //     &control_directive_0_[now.*], // read-only
-                //     &control_directive_0_[next.*], // only accesses [xy]
-                //     &control_directive_1_[now.*], // read-only
-                //     &control_directive_1_[next.*], // only accesses [xy]
-                //     &control_orth_[now.*], // read-only
-                //     &control_orth_[next.*], // only accesses [xy]
-                //     &control_diag_[now.*], // read-only
-                //     &control_diag_[next.*], // only accesses [xy]
-                //     &rainbow_0_[now.*], // read-only
-                //     &rainbow_0_[next.*], // only accesses [xy]
-                //     impatience_0, // only accesses [xy]
-                //     &rainbow_1_[now.*], // read-only
-                //     &rainbow_1_[next.*], // only accesses [xy]
-                //     impatience_1, // only accesses [xy]
-                //     pressure_self, // read-only
-                //     &pressure_orth_[now.*], // read-only
-                //     &pressure_orth_[next.*], // only accesses [xy]
-                //     &pressure_diag_[now.*], // read-only
-                //     &pressure_diag_[next.*], // only accesses [xy]
-                //     &waves_orth_[now.*], // read-only
-                //     &waves_orth_[next.*], // only accesses [xy]
-                //     &waves_diag_[now.*], // read-only
-                //     &waves_diag_[next.*], // only accesses [xy]
-                //     @ptrCast([*c]main_c.turing_vector_t, turing_u), // only accesses [xy]
-                //     @ptrCast([*c]main_c.turing_vector_t, turing_v), // only accesses [xy]
-                // );
                 compute_cyclic_evolution_cell(
                     xy,
+                    umbrary_active,
                     epoch.*,
                     scratch,
                     &control_directive_0_[now.*], // read-only
@@ -647,8 +620,13 @@ fn primary_computation_worker(
     }
 }
 
+// only mutates arrays at index [xy]
+// only reads from mutable arrays at index [xy]
+// therefore, thread-safe to run on cells in parallel
+// TODO enforce the read/write limitations in typesignature
 fn compute_cyclic_evolution_cell(
     xy: usize,
+    umbrary_active: bool,
     epoch: c_int,
     scratch: *[ROWS * COLS]c_int,
     control_directive_0_now: *[ROWS * COLS]c_int, // read-only
@@ -677,39 +655,93 @@ fn compute_cyclic_evolution_cell(
     turing_u: *[ROWS * COLS]main_c.turing_vector_t, // only accesses [xy]
     turing_v: *[ROWS * COLS]main_c.turing_vector_t, // only accesses [xy]
 ) void {
-    // thread-safe to run on cells in parallel (see notes in C definition)
+    // thread-safe to run on cells in parallel
 
-    // TODO: lift this into Zig
-    main_c.c_compute_cyclic_evolution_cell(
-        @intCast(c_int, xy),
-        epoch,
-        scratch,
-        control_directive_0_now, // read-only
-        control_directive_0_next, // only accesses [xy]
-        control_directive_1_now, // read-only
-        control_directive_1_next, // only accesses [xy]
-        control_orth_now, // read-only
-        control_orth_next, // only accesses [xy]
-        control_diag_now, // read-only
-        control_diag_next, // only accesses [xy]
-        rainbow_0_now, // read-only
-        rainbow_0_next, // only accesses [xy]
-        impatience_0, // only accesses [xy]
-        rainbow_1_now, // read-only
-        rainbow_1_next, // only accesses [xy]
-        impatience_1, // only accesses [xy]
-        pressure_self, // read-only
-        pressure_orth_now, // read-only
-        pressure_orth_next, // only accesses [xy]
-        pressure_diag_now, // read-only
-        pressure_diag_next, // only accesses [xy]
-        waves_orth_now, // read-only
-        waves_orth_next, // only accesses [xy]
-        waves_diag_now, // read-only
-        waves_diag_next, // only accesses [xy]
-        @ptrCast([*c]main_c.turing_vector_t, turing_u), // only accesses [xy]
-        @ptrCast([*c]main_c.turing_vector_t, turing_v), // only accesses [xy]
-    );
+    // begin performance block A
+    if (constants.USE_CONTROL_DIRECTIVE) {
+        main_c.compute_decay(control_orth_now, control_diag_now, control_orth_next, control_diag_next, control_directive_0_now, control_directive_1_now, control_directive_0_next, control_directive_1_next, @intCast(c_int, xy));
+
+        // revert to control_directive_1
+        if (control_orth_next[xy] < constants.HIBERNATION_TICKS and control_orth_next[xy] < control_orth_now[xy] and control_directive_0_next[xy] != control_directive_1_next[xy]) {
+            control_directive_0_next[xy] = control_directive_1_next[xy];
+            control_orth_next[xy] += constants.SECONDARY_TRANSITION_TICKS;
+        }
+
+        if (!constants.SACN_SERVER or !constants.SACN_CONTROL(sacn_channels)) {
+            // revert to hibernation
+            if (control_orth_next[xy] == 0 and control_directive_0_next[xy] != constants.PATTERN_BASE) {
+                control_directive_0_next[xy] = constants.PATTERN_BASE;
+                control_directive_1_next[xy] = constants.PATTERN_BASE;
+                control_orth_next[xy] = constants.SECONDARY_TRANSITION_TICKS;
+            }
+        }
+    }
+
+    if (constants.USE_WAVES) {
+        // evolve waves_(orth|diag)
+        main_c.compute_decay(waves_orth_now, waves_diag_now, waves_orth_next, waves_diag_next, scratch, scratch, scratch, scratch, @intCast(c_int, xy));
+    }
+
+    if (constants.USE_PRESSURE) {
+        if (@mod(epoch, constants.WILDFIRE_SPEEDUP) == 0) {
+            // evolve rainbow_0
+            // handled below, with separate timing logic
+            //rainbow_0_next[xy] = main_c.compute_cyclic(rainbow_0, impatience_0, xy);
+
+            // evolve rainbow_1
+            if (pressure_orth_now[xy] > 17) {
+                rainbow_1_next[xy] = -1;
+            } else {
+                rainbow_1_next[xy] = main_c.compute_cyclic(rainbow_1_now, impatience_1, @intCast(c_int, xy));
+            }
+
+            // evolve pressure_(orth|diag)
+            main_c.compute_decay(pressure_orth_now, pressure_diag_now, pressure_orth_next, pressure_diag_next, scratch, scratch, scratch, scratch, @intCast(c_int, xy));
+
+            if (pressure_self[xy] > 0) {
+                pressure_self[xy] -= 1;
+                pressure_orth_next[xy] = constants.PRESSURE_RADIUS_TICKS;
+                pressure_diag_next[xy] = constants.PRESSURE_RADIUS_TICKS;
+            }
+        }
+    }
+    // end performance block A = 18.5ms (now deactivated)
+
+    //begin performance block B
+    if (@mod(epoch, constants.WILDFIRE_SPEEDUP) == 0 and (!UMBRARY or !umbrary_active)) {
+        // evolve rainbow_0
+        rainbow_0_next[xy] =
+            main_c.compute_cyclic(
+            rainbow_0_now,
+            impatience_0,
+            @intCast(c_int, xy),
+        );
+
+        // maybe sync (turing_u, turing_v) from rainbow_0
+        if (rainbow_0_next[xy] != rainbow_0_now[xy] and rainbow_0_next[xy] != main_c.color_of_turing(@intCast(c_int, xy), turing_u, turing_v)) {
+            main_c.rainbow_add_to_turing(
+                @intCast(c_int, xy),
+                rainbow_0_next,
+                turing_u,
+                turing_v,
+            );
+
+            if (@mod((rainbow_0_next[xy] - rainbow_0_now[xy] + constants.COLORS), constants.COLORS) == 2) {
+                switch (rainbow_0_next[xy] - rainbow_0_now[xy] + constants.COLORS) {
+                    2, 2 + constants.COLORS => {
+                        main_c.rainbow_add_to_turing(
+                            @intCast(c_int, xy),
+                            rainbow_0_next,
+                            turing_u,
+                            turing_v,
+                        );
+                    },
+                    else => {},
+                }
+            }
+        }
+    }
+    // end performance block B = 16.1ms
 }
 
 const update_scales =

@@ -137,7 +137,7 @@
 #define TRANSITION_TICKS           400
 #define SECONDARY_TRANSITION_TICKS 300
 #define RAND_SECONDARY_TRANSITION  ( rand() % (ROWS * COLS) == 0 )
-#define HIBERNATION_TICKS          70000 // 70000 ticks ~ 103 seconds
+#define HIBERNATION_TICKS          60000
 #define INITIALIZATION_EPOCHS      3 // run this many epochs on startup
 #define PRESSURE_DELAY_EPOCHS      30
 #define PRESSURE_RADIUS_TICKS      150//76
