@@ -77,6 +77,7 @@ void c_compute_cyclic_evolution_cell(
     int x = xy % COLS;
     int y = xy / COLS;
     
+    // begin performance block A
     compute_decay(
         control_orth, control_diag,
         control_orth_next, control_diag_next,
@@ -145,7 +146,9 @@ void c_compute_cyclic_evolution_cell(
             pressure_orth_next[xy] = pressure_diag_next[xy] = PRESSURE_RADIUS_TICKS;
         }
     }
+    // end performance block A = 18.5ms
     
+    //begin performance block B
     if (
         1
         && (epoch) % WILDFIRE_SPEEDUP == 0
@@ -171,9 +174,9 @@ void c_compute_cyclic_evolution_cell(
                 <= 3
             ) {
                 /* CR rrheingans-yoo: if you just incremented, then set
-                   to substate 0 (but display substate -1 for one round
-                   only). if you just randomized, then set to substate
-                   rand{-1,0,1}.
+                  to substate 0 (but display substate -1 for one round
+                  only). if you just randomized, then set to substate
+                  rand{-1,0,1}.
                 */
                 switch (rainbow_0_next[xy] - rainbow_0[xy]) {
                 case 1: case 1-COLORS:
@@ -206,6 +209,7 @@ void c_compute_cyclic_evolution_cell(
             }
         }
     }
+    // end performance block B = 16.1ms
 }
     
 void c_compute_global_pattern_driver(

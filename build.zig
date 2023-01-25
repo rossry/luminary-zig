@@ -2,6 +2,7 @@ const std = @import("std");
 
 pub fn build(b: *std.build.Builder) void {
     const exe = b.addExecutable("main", "src/main.zig");
+    exe.setBuildMode(b.standardReleaseOptions());
 
     const source_files = [_][]const u8 {
         "src/cellular.c",

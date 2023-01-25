@@ -111,7 +111,7 @@ pub const colors = struct {
 };
 
 // speeds, times, distances
-pub const BASE_HZ: u16 = 72;
+pub const BASE_HZ: u16 = 720;
 pub const WILDFIRE_SPEEDUP: u16 = 3; // wildfire effects propagate at this multiple of BASE_HZ
 pub const DISPLAY_FLUSH_EPOCHS: u16 = 1; // flush display every # epochs
 
