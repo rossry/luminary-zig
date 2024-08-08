@@ -771,7 +771,7 @@ void display_light(int id, int color) {
 
 // to flush, call display_flush_synchronous() and display_flush_asynchronous() on the same **cairo_t (which will be overwritten)
 // you must block on _synchronous(), but can then call _asynchronous() in a detached thread at your leisure 
-int display_flush_synchronous(int epoch, cairo_t **cr_for_async) {
+int display_flush_synchronous(int epoch, cairo_surface_t **surface_for_async) {
     #ifdef OUTPUT_NCURSES
         // ncurses flush
         refresh();
@@ -982,28 +982,28 @@ int display_flush_synchronous(int epoch, cairo_t **cr_for_async) {
             cairo_t *tmp_cairo_video_cr;
             tmp_cairo_video_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, CAIRO_SURFACE_WIDTH, CAIRO_SURFACE_HEIGHT);
             tmp_cairo_video_cr = cairo_create(tmp_cairo_video_surface);
-            cairo_surface_destroy(tmp_cairo_video_surface); // this means to the surface at the same time as destroying the cairo_t
-        
+            
             cairo_set_source_surface (tmp_cairo_video_cr, cairo_video_surface, 0, 0);
             cairo_paint(tmp_cairo_video_cr);
+            cairo_destroy(tmp_cairo_video_cr);
             
             char s[37];
             sprintf(s, "demo/f3-1a/img%08d.png", epoch);
             
             #ifdef OUTPUT_CAIRO_VIDEO_FRAMES_DRYRUN
-                cairo_destroy(tmp_cairo_video_cr);
-                *cr_for_async = NULL;
+                cairo_destroy(tmp_cairo_video_surface);
+                *tmp_cairo_video_surface = NULL;
             #else /* OUTPUT_CAIRO_VIDEO_FRAMES_DRYRUN */
                 if (access( s, F_OK ) == -1) {
-                    *cr_for_async = tmp_cairo_video_cr;
+                    *surface_for_async = tmp_cairo_video_surface;
                     
                     mvprintw(DIAGNOSTIC_ROWS+4, 1, "wrote cairo (%d frames)", epoch/*/WILDFIRE_SPEEDUP*/);
                     #ifdef CAIRO_PRINT_VERBOSE
                         printf("wrote cairo (%d frames)\n", epoch);
                     #endif /* CAIRO_PRINT_VERBOSE */
                 } else {
-                    cairo_destroy(tmp_cairo_video_cr);
-                    *cr_for_async = NULL;
+                    cairo_surface_destroy(tmp_cairo_video_surface);
+                    *surface_for_async = NULL;
                     
                     mvprintw(DIAGNOSTIC_ROWS+4, 1, "skip cairo (%d frames)", epoch/*/WILDFIRE_SPEEDUP*/);
                     #ifdef CAIRO_PRINT_VERBOSE
@@ -1040,12 +1040,12 @@ int display_flush_synchronous(int epoch, cairo_t **cr_for_async) {
     return ret;
 }
 
-void display_flush_asynchronous(int epoch, cairo_t *cr_from_sync) {
+void display_flush_asynchronous(int epoch, cairo_surface_t *surface_from_sync) {
     char s[37];
     sprintf(s, "demo/f3-1a/img%08d.png", epoch);
     
-    if (cr_from_sync != NULL) {
-        cairo_surface_write_to_png(cr_from_sync, s);
-        cairo_destroy(cr_from_sync);
+    if (surface_from_sync != NULL) {
+        cairo_surface_write_to_png(surface_from_sync, s);
+        cairo_surface_destroy(surface_from_sync);
     }
 }

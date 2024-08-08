@@ -323,29 +323,6 @@ void c_draw_and_io(
     #endif /* SPECTRARY */
 }
 
-void c_display_flush(
-    int epoch,
-    timeval_t* refreshed,
-    int* n_dirty_pixels,
-    double* n_dirty_pixels_avg
-    
-) {
-    // begin flush display
-    if (epoch > INITIALIZATION_EPOCHS) {
-        if ((epoch) % DISPLAY_FLUSH_EPOCHS == 0) {
-            cairo_t *cr = NULL;
-            *n_dirty_pixels = display_flush_synchronous(epoch, &cr);
-            display_flush_asynchronous(epoch, cr);
-            *n_dirty_pixels_avg = 0.99*(*n_dirty_pixels_avg) + 0.01*(*n_dirty_pixels);
-        }
-    } else {
-        if ((epoch) % 10 == 0) {
-            mvprintw(0, 0, "initializing (%.0f%%)", 100.0 * (epoch) / INITIALIZATION_EPOCHS);
-            refresh();
-        }
-    }
-}
-
 void c_draw_ui_and_handle_input(
     int spectrary_active,
     int umbrary_active,
