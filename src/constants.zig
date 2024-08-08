@@ -138,7 +138,7 @@ pub const TURING_DIFFUSION_PASSES: u16 = 3;
 pub const RA2T_I: u16 = 0.765; // 0.35
 
 // ncurses output
-pub const OUTPUT_NCURSES: bool = false;
+pub const OUTPUT_NCURSES: bool = true;
 
 // gif output
 pub const OUTPUT_GIF: bool = false;
@@ -150,7 +150,7 @@ pub const gif = if (OUTPUT_GIF) struct {
 } else undefined;
 
 // cairo output
-pub const OUTPUT_CAIRO: bool = true;
+pub const OUTPUT_CAIRO: bool = false;
 pub const cairo = if (OUTPUT_CAIRO) struct {
     pub const FULLSCREEN: bool = false;
     pub const VIDEO_FRAMES: bool = true;

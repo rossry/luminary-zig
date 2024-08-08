@@ -149,7 +149,7 @@
 #define RA2T_I                     0.765 // 0.35
 
 // ncurses output
-//#define OUTPUT_NCURSES
+#define OUTPUT_NCURSES
 
 // gif output
 //#define OUTPUT_GIF
@@ -161,7 +161,7 @@
 #endif /* OUTPUT_GIF */
 
 // cairo output
-#define OUTPUT_CAIRO
+// #define OUTPUT_CAIRO
 #ifdef OUTPUT_CAIRO
     //#define OUTPUT_CAIRO_FULLSCREEN
     #define OUTPUT_CAIRO_VIDEO_FRAMES

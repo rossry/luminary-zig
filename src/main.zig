@@ -4,11 +4,6 @@ var r = std.rand.DefaultPrng.init(3);
 
 const constants = @import("constants.zig");
 
-const STRICT_EXECUTION_ORDERING: bool = constants.STRICT_EXECUTION_ORDERING;
-
-const SPECTRARY: bool = constants.SPECTRARY;
-const UMBRARY: bool = constants.UMBRARY;
-
 const ROWS: u16 = constants.ROWS;
 const COLS: u16 = constants.COLS;
 const CELLS: [ROWS * COLS]void = constants.CELLS;
@@ -24,12 +19,12 @@ const display_c = @cImport({
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("display.h");
 });
-const spectrary_c = if (!SPECTRARY) undefined else @cImport({
+const spectrary_c = if (!constants.SPECTRARY) undefined else @cImport({
     // See https://github.com/ziglang/zig/issues/515
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("spectrary.h");
 });
-const umbrary_c = if (!UMBRARY) undefined else @cImport({
+const umbrary_c = if (!constants.UMBRARY) undefined else @cImport({
     // See https://github.com/ziglang/zig/issues/515
     @cDefine("_NO_CRT_STDIO_INLINE", "1");
     @cInclude("umbrary.h");
@@ -76,8 +71,8 @@ pub fn main() !u8 {
         }
     }
 
-    if (SPECTRARY) {
-        if (SPECTRARY) {
+    if (comptime constants.SPECTRARY) {
+        if (comptime constants.SPECTRARY) {
             unreachable; // handle spectrary args
         }
         if (spectrary_active) {
@@ -87,8 +82,8 @@ pub fn main() !u8 {
         spectrary_active = false;
     }
 
-    if (UMBRARY) {
-        if (UMBRARY) {
+    if (comptime constants.UMBRARY) {
+        if (comptime constants.UMBRARY) {
             unreachable; // handle umbrary args
         }
         if (umbrary_active) {
@@ -195,14 +190,14 @@ pub fn main() !u8 {
 
     const in_chr: c_int = 0;
 
-    if (constants.SACN_SERVER) {
-        if (constants.SACN_TEST_CLIENT) {
+    if (comptime constants.SACN_SERVER) {
+        if (comptime constants.SACN_TEST_CLIENT) {
             sacn_c.sacn_test_client_start();
         }
 
         sacn_c.sacn_server_start();
 
-        if (constants.SACN_TEST_CLIENT) {
+        if (comptime constants.SACN_TEST_CLIENT) {
             sacn_c.sacn_test_client_set_level(constants.CHANNEL_M_MODE, 200);
             sacn_c.sacn_test_client_set_level(constants.CHANNEL_M_MODE, 200); // duped to sync seq no.
         }
@@ -236,7 +231,7 @@ pub fn main() !u8 {
     defer main_c.c_exit();
 
     const N_PRIMARY_WORKERS = 4;
-    const N_DETACHED_WRITERS = if (constants.cairo.VIDEO_FRAMES) 4 else 0;
+    const N_DETACHED_WRITERS = if (comptime constants.OUTPUT_CAIRO and constants.cairo.VIDEO_FRAMES) 4 else 1;
 
     // TODO include these in the turing_vector struct
     var turing_u_start = std.Thread.Semaphore{};
@@ -308,7 +303,7 @@ pub fn main() !u8 {
 
     var detached_writer_available = std.Thread.Semaphore{ .permits = N_DETACHED_WRITERS };
 
-    if (!STRICT_EXECUTION_ORDERING) {
+    if (comptime !constants.STRICT_EXECUTION_ORDERING) {
         // for (&primary_worker_start) |*start| {
         //     start.post();
         // }
@@ -325,19 +320,19 @@ pub fn main() !u8 {
         _ = main_c.gettimeofday(&time_start, null);
 
         // current hypothesis: it's important for this to happen on a consistent side of the epoch bump
-        if (!STRICT_EXECUTION_ORDERING) {
+        if (comptime !constants.STRICT_EXECUTION_ORDERING) {
             for (&primary_worker_start) |*start| {
                 start.post();
             }
         }
 
-        if (!STRICT_EXECUTION_ORDERING) {
-                    turing_u_finalize.post();
-                    turing_v_finalize.post();
-                }
+        if (comptime !constants.STRICT_EXECUTION_ORDERING) {
+            turing_u_finalize.post();
+            turing_v_finalize.post();
+        }
 
         // begin computing evolution
-        if (STRICT_EXECUTION_ORDERING) {
+        if (comptime constants.STRICT_EXECUTION_ORDERING) {
             for (&primary_worker_start) |*start| {
                 start.post();
             }
@@ -350,7 +345,7 @@ pub fn main() !u8 {
             // turing_v_finalize.post();
         }
 
-        if (constants.DRIVE_GLOBAL_PATTERN) {
+        if (comptime constants.DRIVE_GLOBAL_PATTERN) {
             main_c.c_compute_global_pattern_driver(
                 epoch,
                 scene,
@@ -369,16 +364,18 @@ pub fn main() !u8 {
 
         _ = main_c.gettimeofday(&time_fio_start, null);
 
-        if (SPECTRARY and spectrary_active) {
+        if (comptime constants.SPECTRARY and spectrary_active) {
             main_c.spectrary_update();
         }
 
-        if (UMBRARY and umbrary_active) {
+        if (comptime constants.UMBRARY and umbrary_active) {
             main_c.umbrary_update(epoch * 22_222);
         }
 
+        _ = main_c.gettimeofday(&time_fio_stop, null);
+
         for (CELLS, 0..) |_, xy| {
-            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+            if (comptime constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
             }
 
@@ -393,7 +390,7 @@ pub fn main() !u8 {
             );
         }
 
-        if (STRICT_EXECUTION_ORDERING) {
+        if (comptime constants.STRICT_EXECUTION_ORDERING) {
             turing_u_start.post();
             turing_v_start.post();
 
@@ -412,7 +409,7 @@ pub fn main() !u8 {
         turing_v_done.wait();
 
         for (CELLS, 0..) |_, xy| {
-            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+            if (comptime constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
             }
 
@@ -423,14 +420,14 @@ pub fn main() !u8 {
             );
         }
 
-        if (!STRICT_EXECUTION_ORDERING) {
+        if (comptime !constants.STRICT_EXECUTION_ORDERING) {
             turing_u_start.post();
             turing_v_start.post();
         }
 
-        if (UMBRARY and umbrary_active) {
+        if (comptime constants.UMBRARY and umbrary_active) {
             for (CELLS, 0..) |_, xy| {
-                if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+                if (comptime constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                     std.time.sleep(constants.THROTTLE_LOOP_NSEC);
                 }
 
@@ -445,8 +442,6 @@ pub fn main() !u8 {
             }
         }
         // end computing evolution
-
-        _ = main_c.gettimeofday(&time_fio_stop, null);
 
         _ = main_c.gettimeofday(&time_computed, null);
 
@@ -471,8 +466,8 @@ pub fn main() !u8 {
 
         var print_modulus = 5 * @as(c_int, @intFromFloat(@round(0.2 / (@max(total_avg, 1) / 1_000_000))));
         print_modulus = @max(print_modulus, 1);
-        if (epoch > constants.INITIALIZATION_EPOCHS and (@mod(epoch, print_modulus) == 0 or (constants.cairo.VIDEO_FRAMES and !constants.cairo.VIDEO_FRAMES_DRYRUN))) {
-            if (constants.cairo.PRINT_VERBOSE) {
+        if (epoch > constants.INITIALIZATION_EPOCHS and (@mod(epoch, print_modulus) == 0 or (constants.OUTPUT_CAIRO and constants.cairo.VIDEO_FRAMES and !constants.cairo.VIDEO_FRAMES_DRYRUN))) {
+            if (comptime constants.OUTPUT_CAIRO and constants.cairo.PRINT_VERBOSE) {
                 std.debug.print("compute:{d:5.1}ms  ", .{(compute_avg - fio_avg) / 1_000.0});
                 std.debug.print("file io:{d:5.1}ms  ", .{fio_avg / 1_000});
                 std.debug.print("draw:{d:5.1}ms  ", .{draw_avg / 1_000});
@@ -480,7 +475,7 @@ pub fn main() !u8 {
                 std.debug.print("wait:{d:5.1}ms  ", .{wait_avg / 1_000});
                 std.debug.print("sleep:{d:5.1}ms  ", .{sleep_avg / 1_000});
                 std.debug.print("Hz:{d:5.1}/{d}(/{d})  ", .{ 1.0 / (total_avg / 1_000_000), constants.DISPLAY_FLUSH_EPOCHS, constants.WILDFIRE_SPEEDUP });
-                if (!constants.cairo.VIDEO_FRAMES or constants.cairo.VIDEO_FRAMES_DRYRUN) {
+                if (comptime !constants.cairo.VIDEO_FRAMES or constants.cairo.VIDEO_FRAMES_DRYRUN) {
                     std.debug.print("epoch: {d}\n", .{epoch});
                 }
             }
@@ -493,14 +488,14 @@ pub fn main() !u8 {
                 n_dirty_pixels = display_c.display_flush_synchronous(epoch, &surface);
                 n_dirty_pixels_avg = 0.99 * (n_dirty_pixels_avg) + 0.01 * @as(f64, @floatFromInt(n_dirty_pixels));
 
-                // if (!STRICT_EXECUTION_ORDERING) {
+                // if (comptime !constants.STRICT_EXECUTION_ORDERING) {
                 //     turing_u_finalize.post();
                 //     turing_v_finalize.post();
                 // }
 
                 detached_writer_available.wait();
                 // std.debug.print("{d} write dispatched; {d} permits\n", .{epoch, detached_writer_available.permits});
-                if (STRICT_EXECUTION_ORDERING) {
+                if (comptime constants.STRICT_EXECUTION_ORDERING) {
                     detached_writer(epoch, surface, &detached_writer_available);
                 } else {
                     var writer = try std.Thread.spawn(
@@ -517,7 +512,7 @@ pub fn main() !u8 {
                 _ = display_c.refresh();
             }
 
-            // if (!STRICT_EXECUTION_ORDERING) {
+            // if (comptime !constants.STRICT_EXECUTION_ORDERING) {
             //     turing_u_finalize.post();
             //     turing_v_finalize.post();
             // }
@@ -626,14 +621,14 @@ fn primary_computation_worker(
 
         var xy = xy_start;
         while (xy < ROWS * COLS and true) : (xy += xy_increment) {
-            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+            if (comptime constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
             }
 
             const x = xy % COLS;
             const y = xy / COLS;
 
-            if (!constants.PETALS_ACTIVE or y < constants.PETAL_ROWS or x < constants.FLOOR_COLS) {
+            if (comptime !constants.PETALS_ACTIVE or y < constants.PETAL_ROWS or x < constants.FLOOR_COLS) {
                 compute_cyclic_evolution_cell(
                     xy,
                     umbrary_active,
@@ -713,7 +708,7 @@ fn compute_cyclic_evolution_cell(
     // thread-safe to run on cells in parallel
 
     // begin performance block A
-    if (constants.USE_CONTROL_DIRECTIVE) {
+    if (comptime constants.USE_CONTROL_DIRECTIVE) {
         main_c.compute_decay(control_orth_now, control_diag_now, control_orth_next, control_diag_next, control_directive_0_now, control_directive_1_now, control_directive_0_next, control_directive_1_next, @as(c_int, xy));
 
         // revert to control_directive_1
@@ -722,7 +717,7 @@ fn compute_cyclic_evolution_cell(
             control_orth_next[xy] += constants.SECONDARY_TRANSITION_TICKS;
         }
 
-        if (!constants.SACN_SERVER or !constants.SACN_CONTROL(sacn_channels)) {
+        if (comptime !constants.SACN_SERVER or !constants.SACN_CONTROL(sacn_channels)) {
             // revert to hibernation
             if (control_orth_next[xy] == 0 and control_directive_0_next[xy] != constants.PATTERN_BASE) {
                 control_directive_0_next[xy] = constants.PATTERN_BASE;
@@ -732,12 +727,12 @@ fn compute_cyclic_evolution_cell(
         }
     }
 
-    if (constants.USE_WAVES) {
+    if (comptime constants.USE_WAVES) {
         // evolve waves_(orth|diag)
         main_c.compute_decay(waves_orth_now, waves_diag_now, waves_orth_next, waves_diag_next, scratch, scratch, scratch, scratch, @as(c_int, xy));
     }
 
-    if (constants.USE_PRESSURE) {
+    if (comptime constants.USE_PRESSURE) {
         if (@mod(epoch, constants.WILDFIRE_SPEEDUP) == 0) {
             // evolve rainbow_0
             // handled below, with separate timing logic
@@ -763,7 +758,7 @@ fn compute_cyclic_evolution_cell(
     // end performance block A = 18.5ms (now deactivated)
 
     //begin performance block B
-    if (@mod(epoch, constants.WILDFIRE_SPEEDUP) == 0 and (!UMBRARY or !umbrary_active)) {
+    if (@mod(epoch, constants.WILDFIRE_SPEEDUP) == 0 and (!constants.UMBRARY or !umbrary_active)) {
         // evolve rainbow_0
         rainbow_0_next[xy] =
             main_c.compute_cyclic(
@@ -800,17 +795,17 @@ fn compute_cyclic_evolution_cell(
 }
 
 const update_scales =
-    if (STRICT_EXECUTION_ORDERING)
-    [_][constants.MAX_TURING_SCALES]bool{[_]bool{true} ** constants.MAX_TURING_SCALES} ** constants.MAX_TURING_SCALES
-else
-    [constants.MAX_TURING_SCALES][constants.MAX_TURING_SCALES]bool{
-        [_]bool{ true, true, false, false, false },
-        [_]bool{ false, false, true, true, false },
-        [_]bool{ true, false, false, false, true },
-        [_]bool{ false, true, true, false, false },
-        [_]bool{ false, false, false, true, true },
-    }
-    //[constants.MAX_TURING_SCALES]u8{0b10000,0b01000,0b00100,0b00010,0b00001,}
+    if (constants.STRICT_EXECUTION_ORDERING)
+        [_][constants.MAX_TURING_SCALES]bool{[_]bool{true} ** constants.MAX_TURING_SCALES} ** constants.MAX_TURING_SCALES
+    else
+        [constants.MAX_TURING_SCALES][constants.MAX_TURING_SCALES]bool{
+            [_]bool{ true, true, false, false, false },
+            [_]bool{ false, false, true, true, false },
+            [_]bool{ true, false, false, false, true },
+            [_]bool{ false, true, true, false, false },
+            [_]bool{ false, false, false, true, true },
+        }
+        //[constants.MAX_TURING_SCALES]u8{0b10000,0b01000,0b00100,0b00010,0b00001,}
     ;
 
 fn turing_computation_worker(
@@ -861,7 +856,7 @@ fn turing_computation_worker(
         }
 
         for (CELLS, 0..) |_, xy| {
-            if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
+            if (comptime constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
             }
 
