@@ -1,6 +1,6 @@
 const std = @import("std");
 const alloc = std.heap.c_allocator; // TODO-C: change to std.heap.GeneralPurposeAllocator
-var r = std.rand.DefaultPrng.init(2);
+var r = std.rand.DefaultPrng.init(3);
 
 const constants = @import("constants.zig");
 
@@ -56,14 +56,14 @@ pub fn main() !u8 {
 
     var spectrary_active: bool = undefined;
     // this should be a 3dft.dat file, as produced by snd2fftw
-    var spectrary_file: []u8 = undefined;
+    const spectrary_file: []u8 = undefined;
 
     var umbrary_active: bool = undefined;
     // this should be a printf pattern that points to a bmp when passed an int
     // frame 1 needs to exist, and umbrary will scan until it finds a gap
-    var umbrary_bmp_format_string: []u8 = undefined;
+    const umbrary_bmp_format_string: []u8 = undefined;
 
-    for (args) |arg, n| {
+    for (args, 0..) |arg, n| {
         switch (n) {
             0 => {},
             1 => {
@@ -100,9 +100,9 @@ pub fn main() !u8 {
 
     display_c.display_init();
     var epoch: c_int = 0;
-    var scene: c_int = constants.SCENE_BASE;
+    const scene: c_int = constants.SCENE_BASE;
 
-    var menu_context: c_int = constants.MENU_ACTIONS;
+    const menu_context: c_int = constants.MENU_ACTIONS;
 
     var now: u8 = 0;
     var next: u8 = 1;
@@ -119,8 +119,8 @@ pub fn main() !u8 {
 
     var rainbow_0_ = init: {
         var xss: [2][ROWS * COLS]c_int = undefined;
-        for ([_]usize{ 0, 1 }) |w| {
-            for (xss[w]) |*x| {
+        for (0..2) |w| {
+            for (&xss[w]) |*x| {
                 x.* = constants.RAND_COLOR(r.random());
             }
         }
@@ -129,8 +129,8 @@ pub fn main() !u8 {
     var impatience_0 = [_]c_int{0} ** (ROWS * COLS);
     var rainbow_1_ = init: {
         var xss: [2][ROWS * COLS]c_int = undefined;
-        for ([_]usize{ 0, 1 }) |w| {
-            for (xss[w]) |*x| {
+        for (0..2) |w| {
+            for (&xss[w]) |*x| {
                 x.* = constants.RAND_COLOR(r.random());
             }
         }
@@ -152,11 +152,11 @@ pub fn main() !u8 {
 
     var turing_u = init: {
         var xs: [ROWS * COLS]main_c.turing_vector_t = undefined;
-        for (xs) |*x| {
+        for (&xs) |*x| {
             const MAX_TURING_SCALES: u16 = 5;
             x.* = main_c.turing_vector_t{
                 .state = r.random().float(f64) * 2 - 1.0,
-                .n_scales = @intCast(c_int, 5),
+                .n_scales = @as(c_int, 5),
                 .scale = undefined,
                 .increment = [MAX_TURING_SCALES]f64{
                     0.020,
@@ -166,18 +166,18 @@ pub fn main() !u8 {
                     0.052,
                 },
 
-                .debug = @intCast(c_int, 0),
+                .debug = @as(c_int, 0),
             };
         }
         break :init xs;
     };
     var turing_v = init: {
         var xs: [ROWS * COLS]main_c.turing_vector_t = undefined;
-        for (xs) |*x| {
+        for (&xs) |*x| {
             const MAX_TURING_SCALES: u16 = 5;
             x.* = main_c.turing_vector_t{
                 .state = r.random().float(f64) * 2 - 1.0,
-                .n_scales = @intCast(c_int, 5),
+                .n_scales = @as(c_int, 5),
                 .scale = undefined,
                 .increment = [MAX_TURING_SCALES]f64{
                     0.020,
@@ -187,13 +187,13 @@ pub fn main() !u8 {
                     0.052,
                 },
 
-                .debug = @intCast(c_int, 0),
+                .debug = @as(c_int, 0),
             };
         }
         break :init xs;
     };
 
-    var in_chr: c_int = 0;
+    const in_chr: c_int = 0;
 
     if (constants.SACN_SERVER) {
         if (constants.SACN_TEST_CLIENT) {
@@ -236,6 +236,7 @@ pub fn main() !u8 {
     defer main_c.c_exit();
 
     const N_PRIMARY_WORKERS = 4;
+    const N_DETACHED_WRITERS = if (constants.cairo.VIDEO_FRAMES) 4 else 0;
 
     // TODO include these in the turing_vector struct
     var turing_u_start = std.Thread.Semaphore{};
@@ -252,7 +253,7 @@ pub fn main() !u8 {
         &turing_u,
         &turing_u_start,
         &turing_u_finalize,
-        N_PRIMARY_WORKERS,
+        N_PRIMARY_WORKERS + 1,
         &turing_u_done,
         &turing_shutdown,
     });
@@ -261,7 +262,7 @@ pub fn main() !u8 {
         &turing_v,
         &turing_v_start,
         &turing_v_finalize,
-        N_PRIMARY_WORKERS,
+        N_PRIMARY_WORKERS + 1,
         &turing_v_done,
         &turing_shutdown,
     });
@@ -269,11 +270,11 @@ pub fn main() !u8 {
     var primary_worker_done = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** N_PRIMARY_WORKERS;
     var primary_workers_shutdown: bool = false;
 
-    var primary_workers = init: {
+    const primary_workers = init: {
         var xs: [N_PRIMARY_WORKERS]std.Thread = undefined;
-        for (xs) |*x, i| {
+        for (&xs, 0..) |*x, i| {
             x.* = try std.Thread.spawn(std.Thread.SpawnConfig{}, primary_computation_worker, .{
-                @intCast(u16, i),
+                @as(u16, @intCast(i)),
                 N_PRIMARY_WORKERS,
                 &now,
                 &next,
@@ -305,26 +306,43 @@ pub fn main() !u8 {
         break :init xs;
     };
 
+    var detached_writer_available = std.Thread.Semaphore{ .permits = N_DETACHED_WRITERS };
+
     if (!STRICT_EXECUTION_ORDERING) {
-        for (primary_worker_start) |*start| {
-            start.post();
-        }
+        // for (&primary_worker_start) |*start| {
+        //     start.post();
+        // }
 
         turing_u_start.post();
         turing_v_start.post();
+
+        // turing_u_finalize.post();
+        // turing_v_finalize.post();
     }
 
     // main loop
     while (epoch <= epoch_limit or epoch_limit <= 0) : (epoch += 1) {
         _ = main_c.gettimeofday(&time_start, null);
 
-        // begin computing evolution
-        if (STRICT_EXECUTION_ORDERING) {
-            for (primary_worker_start) |*start| {
+        // current hypothesis: it's important for this to happen on a consistent side of the epoch bump
+        if (!STRICT_EXECUTION_ORDERING) {
+            for (&primary_worker_start) |*start| {
                 start.post();
             }
         }
-        for (primary_worker_done) |*done| {
+
+        if (!STRICT_EXECUTION_ORDERING) {
+                    turing_u_finalize.post();
+                    turing_v_finalize.post();
+                }
+
+        // begin computing evolution
+        if (STRICT_EXECUTION_ORDERING) {
+            for (&primary_worker_start) |*start| {
+                start.post();
+            }
+        }
+        for (&primary_worker_done) |*done| {
             done.wait();
 
             // turing_x_finalize semaphores already posted by primary workers replacing the below
@@ -359,13 +377,13 @@ pub fn main() !u8 {
             main_c.umbrary_update(epoch * 22_222);
         }
 
-        for (CELLS) |_, xy| {
+        for (CELLS, 0..) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
             }
 
             main_c.c_apply_other_rules_cell(
-                @intCast(c_int, xy),
+                @as(c_int, @intCast(xy)),
                 &control_directive_0_[now],
                 &rainbow_tone,
                 &rainbow_0_[now],
@@ -385,20 +403,23 @@ pub fn main() !u8 {
             //     turing_u_finalize.post();
             //     turing_v_finalize.post();
             // }
+
+            turing_u_finalize.post();
+            turing_v_finalize.post();
         }
 
         turing_u_done.wait();
         turing_v_done.wait();
 
-        for (CELLS) |_, xy| {
+        for (CELLS, 0..) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
             }
 
             main_c.normalize_turing(
-                @ptrCast([*c]main_c.turing_vector_t, &turing_u),
-                @ptrCast([*c]main_c.turing_vector_t, &turing_v),
-                @intCast(c_int, xy),
+                @as([*c]main_c.turing_vector_t, @ptrCast(&turing_u)),
+                @as([*c]main_c.turing_vector_t, @ptrCast(&turing_v)),
+                @as(c_int, @intCast(xy)),
             );
         }
 
@@ -408,18 +429,18 @@ pub fn main() !u8 {
         }
 
         if (UMBRARY and umbrary_active) {
-            for (CELLS) |_, xy| {
+            for (CELLS, 0..) |_, xy| {
                 if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                     std.time.sleep(constants.THROTTLE_LOOP_NSEC);
                 }
 
                 main_c.c_apply_umbrary_cell(
-                    @intCast(c_int, xy),
-                    @boolToInt(umbrary_active),
+                    @as(c_int, xy),
+                    @as(c_int, @intFromBool(umbrary_active)),
                     epoch,
                     &rainbow_0_[next],
-                    @ptrCast([*c]main_c.turing_vector_t, &turing_u),
-                    @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+                    @as([*c]main_c.turing_vector_t, @ptrCast(&turing_u)),
+                    @as([*c]main_c.turing_vector_t, @ptrCast(&turing_v)),
                 );
             }
         }
@@ -431,11 +452,11 @@ pub fn main() !u8 {
 
         // begin draw/increment mutex
         main_c.c_draw_and_io(
-            @boolToInt(spectrary_active),
-            @boolToInt(umbrary_active),
+            @as(c_int, @intFromBool(spectrary_active)),
+            @as(c_int, @intFromBool(umbrary_active)),
             epoch,
-            @ptrCast([*c]main_c.turing_vector_t, &turing_u),
-            @ptrCast([*c]main_c.turing_vector_t, &turing_v),
+            @as([*c]main_c.turing_vector_t, @ptrCast(&turing_u)),
+            @as([*c]main_c.turing_vector_t, @ptrCast(&turing_v)),
         );
 
         // flip double-buffering indices
@@ -447,13 +468,9 @@ pub fn main() !u8 {
 
         _ = main_c.gettimeofday(&time_drawn, null);
 
-        if (!STRICT_EXECUTION_ORDERING) {
-            for (primary_worker_start) |*start| {
-                start.post();
-            }
-        }
 
-        var print_modulus = 5 * @floatToInt(c_int, @round(0.2 / (total_avg / 1_000_000)));
+        var print_modulus = 5 * @as(c_int, @intFromFloat(@round(0.2 / (@max(total_avg, 1) / 1_000_000))));
+        print_modulus = @max(print_modulus, 1);
         if (epoch > constants.INITIALIZATION_EPOCHS and (@mod(epoch, print_modulus) == 0 or (constants.cairo.VIDEO_FRAMES and !constants.cairo.VIDEO_FRAMES_DRYRUN))) {
             if (constants.cairo.PRINT_VERBOSE) {
                 std.debug.print("compute:{d:5.1}ms  ", .{(compute_avg - fio_avg) / 1_000.0});
@@ -469,18 +486,48 @@ pub fn main() !u8 {
             }
         }
 
-        main_c.c_display_flush(
-            epoch,
-            &time_refreshed,
-            &n_dirty_pixels,
-            &n_dirty_pixels_avg,
-        );
+        // begin flush display
+        if (epoch > constants.INITIALIZATION_EPOCHS) {
+            if (@mod(epoch, constants.DISPLAY_FLUSH_EPOCHS) == 0) {
+                var surface: ?*display_c.cairo_surface_t = null;
+                n_dirty_pixels = display_c.display_flush_synchronous(epoch, &surface);
+                n_dirty_pixels_avg = 0.99 * (n_dirty_pixels_avg) + 0.01 * @as(f64, @floatFromInt(n_dirty_pixels));
+
+                // if (!STRICT_EXECUTION_ORDERING) {
+                //     turing_u_finalize.post();
+                //     turing_v_finalize.post();
+                // }
+
+                detached_writer_available.wait();
+                // std.debug.print("{d} write dispatched; {d} permits\n", .{epoch, detached_writer_available.permits});
+                if (STRICT_EXECUTION_ORDERING) {
+                    detached_writer(epoch, surface, &detached_writer_available);
+                } else {
+                    var writer = try std.Thread.spawn(
+                        std.Thread.SpawnConfig{},
+                        detached_writer,
+                        .{ epoch, surface, &detached_writer_available },
+                    );
+                    writer.detach();
+                }
+            }
+        } else {
+            if (@mod(epoch, 10) == 0) {
+                _ = display_c.mvprintw(0, 0, "initializing (%.0f%%)", 100.0 * @as(f64, @floatFromInt(epoch)) / @as(f64, @floatFromInt(constants.INITIALIZATION_EPOCHS)));
+                _ = display_c.refresh();
+            }
+
+            // if (!STRICT_EXECUTION_ORDERING) {
+            //     turing_u_finalize.post();
+            //     turing_v_finalize.post();
+            // }
+        }
 
         _ = main_c.gettimeofday(&time_refreshed, null);
 
         main_c.c_draw_ui_and_handle_input(
-            @boolToInt(spectrary_active),
-            @boolToInt(umbrary_active),
+            @as(c_int, @intFromBool(spectrary_active)),
+            @as(c_int, @intFromBool(umbrary_active)),
             epoch,
             scene,
             menu_context,
@@ -512,26 +559,33 @@ pub fn main() !u8 {
 
     primary_workers_shutdown = true;
     // TODO fence here for -Drelease-fast
-    for (primary_worker_start) |*start| {
+    for (&primary_worker_start) |*start| {
         start.post();
     }
-    for (primary_workers) |*worker| {
+    for (&primary_workers) |*worker| {
         worker.join();
     }
 
     turing_shutdown = true;
     // TODO fence here for -Drelease-fast
 
-    for (primary_workers) |_| {
+    for (&primary_workers) |_| {
         turing_u_finalize.post();
         turing_v_finalize.post();
     }
+    turing_u_finalize.post();
+    turing_v_finalize.post();
 
     turing_u_start.post();
     turing_v_start.post();
 
     turing_worker_u.join();
     turing_worker_v.join();
+
+    var i: u8 = 0;
+    while (i < N_DETACHED_WRITERS) : (i += 1) {
+        detached_writer_available.wait();
+    }
 
     return 0;
 }
@@ -576,8 +630,8 @@ fn primary_computation_worker(
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
             }
 
-            var x = xy % COLS;
-            var y = xy / COLS;
+            const x = xy % COLS;
+            const y = xy / COLS;
 
             if (!constants.PETALS_ACTIVE or y < constants.PETAL_ROWS or x < constants.FLOOR_COLS) {
                 compute_cyclic_evolution_cell(
@@ -614,6 +668,7 @@ fn primary_computation_worker(
             }
         }
 
+        // std.debug.print("{d} primary\n", .{epoch.*});
         done1.*.post();
         done2.*.post();
         done3.*.post();
@@ -659,7 +714,7 @@ fn compute_cyclic_evolution_cell(
 
     // begin performance block A
     if (constants.USE_CONTROL_DIRECTIVE) {
-        main_c.compute_decay(control_orth_now, control_diag_now, control_orth_next, control_diag_next, control_directive_0_now, control_directive_1_now, control_directive_0_next, control_directive_1_next, @intCast(c_int, xy));
+        main_c.compute_decay(control_orth_now, control_diag_now, control_orth_next, control_diag_next, control_directive_0_now, control_directive_1_now, control_directive_0_next, control_directive_1_next, @as(c_int, xy));
 
         // revert to control_directive_1
         if (control_orth_next[xy] < constants.HIBERNATION_TICKS and control_orth_next[xy] < control_orth_now[xy] and control_directive_0_next[xy] != control_directive_1_next[xy]) {
@@ -679,7 +734,7 @@ fn compute_cyclic_evolution_cell(
 
     if (constants.USE_WAVES) {
         // evolve waves_(orth|diag)
-        main_c.compute_decay(waves_orth_now, waves_diag_now, waves_orth_next, waves_diag_next, scratch, scratch, scratch, scratch, @intCast(c_int, xy));
+        main_c.compute_decay(waves_orth_now, waves_diag_now, waves_orth_next, waves_diag_next, scratch, scratch, scratch, scratch, @as(c_int, xy));
     }
 
     if (constants.USE_PRESSURE) {
@@ -692,11 +747,11 @@ fn compute_cyclic_evolution_cell(
             if (pressure_orth_now[xy] > 17) {
                 rainbow_1_next[xy] = -1;
             } else {
-                rainbow_1_next[xy] = main_c.compute_cyclic(rainbow_1_now, impatience_1, @intCast(c_int, xy));
+                rainbow_1_next[xy] = main_c.compute_cyclic(rainbow_1_now, impatience_1, @as(c_int, xy));
             }
 
             // evolve pressure_(orth|diag)
-            main_c.compute_decay(pressure_orth_now, pressure_diag_now, pressure_orth_next, pressure_diag_next, scratch, scratch, scratch, scratch, @intCast(c_int, xy));
+            main_c.compute_decay(pressure_orth_now, pressure_diag_now, pressure_orth_next, pressure_diag_next, scratch, scratch, scratch, scratch, @as(c_int, xy));
 
             if (pressure_self[xy] > 0) {
                 pressure_self[xy] -= 1;
@@ -714,13 +769,13 @@ fn compute_cyclic_evolution_cell(
             main_c.compute_cyclic(
             rainbow_0_now,
             impatience_0,
-            @intCast(c_int, xy),
+            @as(c_int, @intCast(xy)),
         );
 
         // maybe sync (turing_u, turing_v) from rainbow_0
-        if (rainbow_0_next[xy] != rainbow_0_now[xy] and rainbow_0_next[xy] != main_c.color_of_turing(@intCast(c_int, xy), turing_u, turing_v)) {
+        if (rainbow_0_next[xy] != rainbow_0_now[xy] and rainbow_0_next[xy] != main_c.color_of_turing(@as(c_int, @intCast(xy)), turing_u, turing_v)) {
             main_c.rainbow_add_to_turing(
-                @intCast(c_int, xy),
+                @as(c_int, @intCast(xy)),
                 rainbow_0_next,
                 turing_u,
                 turing_v,
@@ -730,7 +785,7 @@ fn compute_cyclic_evolution_cell(
                 switch (rainbow_0_next[xy] - rainbow_0_now[xy] + constants.COLORS) {
                     2, 2 + constants.COLORS => {
                         main_c.rainbow_add_to_turing(
-                            @intCast(c_int, xy),
+                            @as(c_int, @intCast(xy)),
                             rainbow_0_next,
                             turing_u,
                             turing_v,
@@ -746,7 +801,7 @@ fn compute_cyclic_evolution_cell(
 
 const update_scales =
     if (STRICT_EXECUTION_ORDERING)
-    [constants.MAX_TURING_SCALES][constants.MAX_TURING_SCALES]u8{[_]bool{true} ** constants.MAX_TURING_SCALES} ** constants.MAX_TURING_SCALES
+    [_][constants.MAX_TURING_SCALES]bool{[_]bool{true} ** constants.MAX_TURING_SCALES} ** constants.MAX_TURING_SCALES
 else
     [constants.MAX_TURING_SCALES][constants.MAX_TURING_SCALES]bool{
         [_]bool{ true, true, false, false, false },
@@ -769,11 +824,11 @@ fn turing_computation_worker(
 ) !void {
     var subworker_start = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** constants.MAX_TURING_SCALES;
     var subworker_done = [_]std.Thread.Semaphore{std.Thread.Semaphore{}} ** constants.MAX_TURING_SCALES;
-    var subworkers = init: {
+    const subworkers = init: {
         var xs: [constants.MAX_TURING_SCALES]std.Thread = undefined;
-        for (subworker_start) |_, scale| {
+        for (subworker_start, 0..) |_, scale| {
             xs[scale] = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_subworker, .{
-                @intCast(u8, scale),
+                @as(u8, @intCast(scale)),
                 turing_v,
                 &subworker_start[scale],
                 &subworker_done[scale],
@@ -786,19 +841,15 @@ fn turing_computation_worker(
     while (!shutdown.*) {
         start.*.wait();
 
-        // _ = finalize_waits;
-        // _ = finalize;
-        // _ = epoch;
+        const epoch_tmp: usize = @as(usize, @intCast(@mod(epoch.*, constants.MAX_TURING_SCALES)));
 
-        var epoch_tmp: usize = @intCast(usize, @mod(epoch.*, constants.MAX_TURING_SCALES));
-
-        for (update_scales[epoch_tmp]) |update_scale, scale| {
+        for (update_scales[epoch_tmp], 0..) |update_scale, scale| {
             if (update_scale) {
                 subworker_start[scale].post();
             }
         }
 
-        for (update_scales[epoch_tmp]) |update_scale, scale| {
+        for (update_scales[epoch_tmp], 0..) |update_scale, scale| {
             if (update_scale) {
                 subworker_done[scale].wait();
             }
@@ -809,25 +860,26 @@ fn turing_computation_worker(
             finalize.*.wait();
         }
 
-        for (CELLS) |_, xy| {
+        for (CELLS, 0..) |_, xy| {
             if (constants.THROTTLE_LOOP and xy % constants.THROTTLE_LOOP_N == 0) {
                 std.time.sleep(constants.THROTTLE_LOOP_NSEC);
             }
 
             main_c.apply_turing(
-                @ptrCast([*c]main_c.turing_vector_t, turing_v),
-                @intCast(c_int, xy),
+                @as([*c]main_c.turing_vector_t, @ptrCast(turing_v)),
+                @as(c_int, @intCast(xy)),
                 @as(f64, 1.0),
-                @intToFloat(f64, @mod(epoch.*, 1_000)) / (1_000.0),
+                @as(f64, @floatFromInt(@mod(epoch.*, 1_000))) / 1_000.0,
             );
         }
 
+        // std.debug.print("{d} turing\n", .{epoch.*});
         done.*.post();
     } else {
-        for (subworker_start) |*sem| {
+        for (&subworker_start) |*sem| {
             sem.*.post();
         }
-        for (subworkers) |*subworker| {
+        for (&subworkers) |*subworker| {
             subworker.join();
         }
     }
@@ -843,8 +895,21 @@ fn turing_computation_subworker(
     while (!shutdown.*) {
         start.*.wait();
 
-        main_c.compute_turing_scale(@ptrCast([*c]main_c.turing_vector_t, turing_v), scale);
+        main_c.compute_turing_scale(@as([*c]main_c.turing_vector_t, @ptrCast(turing_v)), scale);
 
         done.*.post();
     }
+}
+
+fn detached_writer(
+    epoch: c_int,
+    surface: ?*display_c.cairo_surface_t,
+    done: *std.Thread.Semaphore,
+) void {
+    // std.debug.print("{d} write started; {d} permits\n", .{epoch, done.*.permits});
+    display_c.display_flush_asynchronous(epoch, surface);
+
+    // std.debug.print("{d} write finished; {d} permits\n", .{epoch, done.*.permits});
+    done.*.post();
+    // std.debug.print("{d} posted done; {d} permits\n", .{epoch, done.*.permits});
 }
