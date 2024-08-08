@@ -56,7 +56,7 @@ pub inline fn PETAL_OF(xy: u16) u16 {
     }
 }
 
-pub const DIAGNOSTIC_SAMPLING_RATE: u16 = 1;
+pub const DIAGNOSTIC_SAMPLING_RATE: u16 = 16;
 pub const DISPLAY_PETALS_MODE: bool = PETALS_ACTIVE and true;
 pub const DISPLAY_FLOOR_ALSO: bool = PETALS_ACTIVE and false;
 

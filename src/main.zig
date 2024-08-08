@@ -144,49 +144,44 @@ pub fn main() !u8 {
 
     var waves_orth_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
     var waves_diag_ = [_][ROWS * COLS]c_int{[_]c_int{0} ** (ROWS * COLS)} ** 2;
-
-    var turing_u = init: {
-        var xs: [ROWS * COLS]main_c.turing_vector_t = undefined;
-        for (&xs) |*x| {
-            const MAX_TURING_SCALES: u16 = 5;
-            x.* = main_c.turing_vector_t{
-                .state = r.random().float(f64) * 2 - 1.0,
-                .n_scales = @as(c_int, 5),
-                .scale = undefined,
-                .increment = [MAX_TURING_SCALES]f64{
-                    0.020,
-                    0.028,
-                    0.036,
-                    0.044,
-                    0.052,
-                },
-
-                .debug = @as(c_int, 0),
-            };
-        }
-        break :init xs;
-    };
-    var turing_v = init: {
-        var xs: [ROWS * COLS]main_c.turing_vector_t = undefined;
-        for (&xs) |*x| {
-            const MAX_TURING_SCALES: u16 = 5;
-            x.* = main_c.turing_vector_t{
-                .state = r.random().float(f64) * 2 - 1.0,
-                .n_scales = @as(c_int, 5),
-                .scale = undefined,
-                .increment = [MAX_TURING_SCALES]f64{
-                    0.020,
-                    0.028,
-                    0.036,
-                    0.044,
-                    0.052,
-                },
-
-                .debug = @as(c_int, 0),
-            };
-        }
-        break :init xs;
-    };
+    
+    // putting these on the stack will overflow, so don't do that.
+    const turing_u = try alloc.create([ROWS * COLS]main_c.turing_vector_t);
+    defer alloc.destroy(turing_u);
+    for (turing_u) |*x| {
+        const MAX_TURING_SCALES: u16 = 5;
+        x.* = main_c.turing_vector_t{
+            .state = r.random().float(f64) * 2 - 1.0,
+            .n_scales = @as(c_int, 5),
+            .scale = undefined,
+            .increment = [MAX_TURING_SCALES]f64{
+                0.020,
+                0.028,
+                0.036,
+                0.044,
+                0.052,
+            },
+            .debug = @as(c_int, 0),
+        };
+    }
+    const turing_v = try alloc.create([ROWS * COLS]main_c.turing_vector_t);
+    defer alloc.destroy(turing_v);
+    for (turing_v) |*x| {
+        const MAX_TURING_SCALES: u16 = 5;
+        x.* = main_c.turing_vector_t{
+            .state = r.random().float(f64) * 2 - 1.0,
+            .n_scales = @as(c_int, 5),
+            .scale = undefined,
+            .increment = [MAX_TURING_SCALES]f64{
+                0.020,
+                0.028,
+                0.036,
+                0.044,
+                0.052,
+            },
+            .debug = @as(c_int, 0),
+        };
+    }
 
     const in_chr: c_int = 0;
 
@@ -245,16 +240,18 @@ pub fn main() !u8 {
     var turing_worker_u: std.Thread =
         try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{
         &epoch,
-        &turing_u,
+        turing_u,
         &turing_u_start,
         &turing_u_finalize,
         N_PRIMARY_WORKERS + 1,
         &turing_u_done,
         &turing_shutdown,
     });
-    var turing_worker_v: std.Thread = try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{
+    
+    var turing_worker_v: std.Thread =
+        try std.Thread.spawn(std.Thread.SpawnConfig{}, turing_computation_worker, .{
         &epoch,
-        &turing_v,
+        turing_v,
         &turing_v_start,
         &turing_v_finalize,
         N_PRIMARY_WORKERS + 1,
@@ -289,8 +286,8 @@ pub fn main() !u8 {
                 &pressure_diag_,
                 &waves_orth_,
                 &waves_diag_,
-                &turing_u,
-                &turing_v,
+                turing_u,
+                turing_v,
                 &primary_worker_start[i],
                 &primary_worker_done[i],
                 &turing_u_finalize,
@@ -414,8 +411,8 @@ pub fn main() !u8 {
             }
 
             main_c.normalize_turing(
-                @as([*c]main_c.turing_vector_t, @ptrCast(&turing_u)),
-                @as([*c]main_c.turing_vector_t, @ptrCast(&turing_v)),
+                @as([*c]main_c.turing_vector_t, @ptrCast(turing_u)),
+                @as([*c]main_c.turing_vector_t, @ptrCast(turing_v)),
                 @as(c_int, @intCast(xy)),
             );
         }
@@ -436,8 +433,8 @@ pub fn main() !u8 {
                     @as(c_int, @intFromBool(umbrary_active)),
                     epoch,
                     &rainbow_0_[next],
-                    @as([*c]main_c.turing_vector_t, @ptrCast(&turing_u)),
-                    @as([*c]main_c.turing_vector_t, @ptrCast(&turing_v)),
+                    @as([*c]main_c.turing_vector_t, @ptrCast(turing_u)),
+                    @as([*c]main_c.turing_vector_t, @ptrCast(turing_v)),
                 );
             }
         }
@@ -450,8 +447,8 @@ pub fn main() !u8 {
             @as(c_int, @intFromBool(spectrary_active)),
             @as(c_int, @intFromBool(umbrary_active)),
             epoch,
-            @as([*c]main_c.turing_vector_t, @ptrCast(&turing_u)),
-            @as([*c]main_c.turing_vector_t, @ptrCast(&turing_v)),
+            @as([*c]main_c.turing_vector_t, @ptrCast(turing_u)),
+            @as([*c]main_c.turing_vector_t, @ptrCast(turing_v)),
         );
 
         // flip double-buffering indices
@@ -798,6 +795,7 @@ const update_scales =
     if (constants.STRICT_EXECUTION_ORDERING)
         [_][constants.MAX_TURING_SCALES]bool{[_]bool{true} ** constants.MAX_TURING_SCALES} ** constants.MAX_TURING_SCALES
     else
+        // TODO make this actually scale with constants.MAX_TURING_SCALES
         [constants.MAX_TURING_SCALES][constants.MAX_TURING_SCALES]bool{
             [_]bool{ true, true, false, false, false },
             [_]bool{ false, false, true, true, false },

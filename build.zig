@@ -5,7 +5,7 @@ pub fn build(b: *std.Build) void {
         .name = "main",
         .root_source_file = b.path("src/main.zig"),
         .target = b.host,
-        .optimize = .ReleaseSafe,
+        .optimize = .ReleaseFast,
     });
 
     const source_files = [_][]const u8{

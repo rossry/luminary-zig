@@ -64,7 +64,7 @@
     
     #define PETAL_OF(xy) 0
     
-    #define DIAGNOSTIC_SAMPLING_RATE 2
+    #define DIAGNOSTIC_SAMPLING_RATE 16
 #endif /*PETALS_ACTIVE*/
 
 
