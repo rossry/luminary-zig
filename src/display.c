@@ -643,11 +643,14 @@ void display_color(int xy, int color, int state_color) {
     int x = xy % COLS;
     int y = xy / COLS;
     if (
-        y <
-        FLOOR_ROWS_SHOWN
+        (y >= FLOOR_ROWS_HIDDEN_TOP)
+        &&
+        (y <
+        FLOOR_ROWS_SHOWN + FLOOR_ROWS_HIDDEN_TOP
         #ifdef DISPLAY_PETALS_MODE
             + PETAL_ROWS
         #endif /* DISPLAY_PETALS_MODE */
+        )
     ) {
         if (display_current[xy] != state_color
             //|| rand() % 100 == 0
@@ -695,7 +698,7 @@ void display_color(int xy, int color, int state_color) {
                     #else /* DISPLAY_PETALS_MODE */
                         attron(COLOR_PAIR(1+color));
                         mvprintw(
-                            y/DIAGNOSTIC_SAMPLING_RATE,
+                            (y-FLOOR_ROWS_HIDDEN_TOP)/DIAGNOSTIC_SAMPLING_RATE,
                             2*x/DIAGNOSTIC_SAMPLING_RATE,
                             "%%%%"
                         );

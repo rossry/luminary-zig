@@ -33,11 +33,12 @@ pub const UMBRARY: bool = false;
 pub const PETALS_ACTIVE: bool = false;
 
 //TODO: to be continued...
-pub const FLOOR_COLS: u16 = 96;
-pub const FLOOR_ROWS: u16 = 96;
+pub const FLOOR_COLS: u16 = 700;
+pub const FLOOR_ROWS: u16 = 80;
 
 pub const FLOOR_COLS_SHOWN: u16 = FLOOR_COLS;
-pub const FLOOR_ROWS_SHOWN: u16 = FLOOR_ROWS;
+pub const FLOOR_ROWS_HIDDEN_TOP: u16 = 30;
+pub const FLOOR_ROWS_SHOWN: u16 = 20;
 
 pub const PETAL_COLS: u16 = if (PETALS_ACTIVE) 18 else 32; // per petal
 pub const PETAL_ROWS: u16 = if (PETALS_ACTIVE) 32 else 0;
@@ -56,18 +57,18 @@ pub inline fn PETAL_OF(xy: u16) u16 {
     }
 }
 
-pub const DIAGNOSTIC_SAMPLING_RATE: u16 = 16;
+pub const DIAGNOSTIC_SAMPLING_RATE: u16 = 5;
 pub const DISPLAY_PETALS_MODE: bool = PETALS_ACTIVE and true;
 pub const DISPLAY_FLOOR_ALSO: bool = PETALS_ACTIVE and false;
 
 pub const DIAGNOSTIC_ROWS =
     if (DISPLAY_PETALS_MODE)
-    (if (DISPLAY_FLOOR_ALSO)
-        ((PETAL_ROWS + FLOOR_ROWS_SHOWN / 2) / DIAGNOSTIC_SAMPLING_RATE + 5)
+        (if (DISPLAY_FLOOR_ALSO)
+            ((PETAL_ROWS + FLOOR_ROWS_SHOWN / 2) / DIAGNOSTIC_SAMPLING_RATE + 5)
+        else
+            ((PETAL_ROWS / DIAGNOSTIC_SAMPLING_RATE) * 2 + 3))
     else
-        ((PETAL_ROWS / DIAGNOSTIC_SAMPLING_RATE) * 2 + 3))
-else
-    (((FLOOR_ROWS_SHOWN - 1) / DIAGNOSTIC_SAMPLING_RATE) + 1);
+        (((FLOOR_ROWS_SHOWN - 1) / DIAGNOSTIC_SAMPLING_RATE) + 1);
 
 pub const DIAGNOSTIC_COLS: u16 = 72;
 
@@ -116,7 +117,7 @@ pub const colors = struct {
 // speeds, times, distances
 pub const BASE_HZ: u16 = 720;
 pub const WILDFIRE_SPEEDUP: u16 = 3; // wildfire effects propagate at this multiple of BASE_HZ
-pub const DISPLAY_FLUSH_EPOCHS: u16 = 1; // flush display every # epochs
+pub const DISPLAY_FLUSH_EPOCHS: u16 = 6; // flush display every # epochs
 
 pub const THROTTLE_LOOP: bool = false;
 pub const THROTTLE_LOOP_N: u16 = if (THROTTLE_LOOP) 100 else undefined;

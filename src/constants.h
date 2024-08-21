@@ -33,11 +33,12 @@
 // physical dimensions
 //  #define PETALS_ACTIVE
 
-#define FLOOR_COLS 96
-#define FLOOR_ROWS 96
+#define FLOOR_COLS 700
+#define FLOOR_ROWS 80
 
 #define FLOOR_COLS_SHOWN FLOOR_COLS
-#define FLOOR_ROWS_SHOWN FLOOR_ROWS
+#define FLOOR_ROWS_HIDDEN_TOP 30
+#define FLOOR_ROWS_SHOWN 20
 
 #ifdef PETALS_ACTIVE
     #define PETAL_COLS 18 // per petal
@@ -64,7 +65,7 @@
     
     #define PETAL_OF(xy) 0
     
-    #define DIAGNOSTIC_SAMPLING_RATE 16
+    #define DIAGNOSTIC_SAMPLING_RATE 5
 #endif /*PETALS_ACTIVE*/
 
 
@@ -126,7 +127,7 @@
 // speeds, times, distances
 #define BASE_HZ                    720
 #define WILDFIRE_SPEEDUP           3// wildfire effects propagate at this multiple of BASE_HZ
-#define DISPLAY_FLUSH_EPOCHS       1 // flush display every # epochs
+#define DISPLAY_FLUSH_EPOCHS       6 // flush display every # epochs
 
 //#define THROTTLE_LOOP
 #ifdef THROTTLE_LOOP
